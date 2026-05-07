@@ -2,16 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f0f23">
-    <meta name="description" content="Generador profesional de YouTube Shorts con voz ElevenLabs">
     <title>ShortsGen Pro - Creador de YouTube Shorts</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -20,20 +15,8 @@
         <div class="splash-content">
             <div class="splash-logo">🎬</div>
             <h1>ShortsGen Pro</h1>
-            <p>Creador de YouTube Shorts con ElevenLabs</p>
+            <p>Creador de YouTube Shorts</p>
             <div class="splash-loader"><div class="loader-bar"></div></div>
-        </div>
-    </div>
-
-    <!-- Install Prompt -->
-    <div id="install-prompt" class="hidden">
-        <div class="install-card">
-            <span class="install-icon">📱</span>
-            <p>Instala ShortsGen Pro para usarlo sin conexión</p>
-            <div class="btn-row">
-                <button class="btn-secondary" id="btn-dismiss-install">Ahora no</button>
-                <button class="btn-primary" id="btn-install">Instalar</button>
-            </div>
         </div>
     </div>
 
@@ -45,51 +28,25 @@
                 <span class="header-icon">🎬</span>
                 <h1>ShortsGen Pro</h1>
             </div>
-            <div class="header-actions">
-                <button class="btn-icon" id="btn-settings" title="Configuración">⚙️</button>
-                <button class="btn-icon" id="btn-help" title="Ayuda">❓</button>
-            </div>
         </header>
 
-        <!-- Tab Navigation -->
+        <!-- Tabs -->
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="create">
-                <span class="tab-icon">✨</span>
-                <span>Crear</span>
-            </button>
-            <button class="tab-btn" data-tab="templates">
-                <span class="tab-icon">🎨</span>
-                <span>Plantillas</span>
-            </button>
-            <button class="tab-btn" data-tab="gallery">
-                <span class="tab-icon">🎬</span>
-                <span>Mis Videos</span>
-            </button>
+            <button class="tab-btn active" data-tab="create">✨ Crear</button>
+            <button class="tab-btn" data-tab="templates">🎨 Plantillas</button>
         </nav>
 
         <!-- Tab: Create -->
         <div class="tab-content active" id="tab-create">
-            <!-- Step Indicator -->
+            <!-- Steps -->
             <div class="step-indicator">
-                <div class="step active" data-step="1">
-                    <div class="step-number">1</div>
-                    <span>Guion</span>
-                </div>
+                <div class="step active" data-step="1"><div class="step-number">1</div><span>Guion</span></div>
                 <div class="step-line"></div>
-                <div class="step" data-step="2">
-                    <div class="step-number">2</div>
-                    <span>Voz</span>
-                </div>
+                <div class="step" data-step="2"><div class="step-number">2</div><span>Voz</span></div>
                 <div class="step-line"></div>
-                <div class="step" data-step="3">
-                    <div class="step-number">3</div>
-                    <span>Visual</span>
-                </div>
+                <div class="step" data-step="3"><div class="step-number">3</div><span>Visual</span></div>
                 <div class="step-line"></div>
-                <div class="step" data-step="4">
-                    <div class="step-number">4</div>
-                    <span>Exportar</span>
-                </div>
+                <div class="step" data-step="4"><div class="step-number">4</div><span>Exportar</span></div>
             </div>
 
             <!-- Step 1: Script -->
@@ -120,51 +77,31 @@
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <label>Categoría</label>
-                    <div class="category-grid">
-                        <button class="category-btn active" data-category="general">🌟 General</button>
-                        <button class="category-btn" data-category="motivacion">💪 Motivación</button>
-                        <button class="category-btn" data-category="educacion">📚 Educación</button>
-                        <button class="category-btn" data-category="cocina">🍳 Cocina</button>
-                        <button class="category-btn" data-category="entretenimiento">🎭 Entretenimiento</button>
-                        <button class="category-btn" data-category="tecnologia">💻 Tecnología</button>
-                    </div>
-                </div>
-
                 <div class="btn-row">
-                    <button class="btn-primary btn-large" id="btn-next-1">
-                        Siguiente <span class="btn-arrow">→</span>
-                    </button>
+                    <button class="btn-primary btn-large" id="btn-next-1">Siguiente →</button>
                 </div>
             </div>
 
             <!-- Step 2: Voice -->
             <div class="step-panel" id="step-2">
                 <div class="panel-header">
-                    <h2>🎙️ Voz ElevenLabs</h2>
-                    <p class="panel-desc">Selecciona una voz de alta calidad</p>
+                    <h2>🎙️ Voz</h2>
+                    <p class="panel-desc">Selecciona una voz para tu Short</p>
                 </div>
 
                 <!-- API Key Section -->
                 <div class="input-group api-key-section">
-                    <label>🔑 API Key de ElevenLabs</label>
+                    <label>🔑 API Key de ElevenLabs (Opcional)</label>
                     <input type="password" id="elevenlabs-api-key" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx">
-                    <p class="hint">Obtén tu API Key gratuita en <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank">elevenlabs.io</a>. Versión gratis: 10,000 caracteres/mes.</p>
-                    <div id="fallback-notice" style="display:none;margin-top:0.5rem;padding:0.75rem;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
-                        <p style="font-size:0.8rem;color:#ffc107;margin:0;">⚠️ ElevenLabs no disponible. Puedes usar la <strong>voz gratuita de tu navegador</strong> sin API Key.</p>
-                    </div>
-                    <button class="btn-secondary btn-full" id="btn-test-api" style="margin-top:0.5rem;">
-                        🔗 Probar Conexión
-                    </button>
+                    <p class="hint">Si tienes API Key de ElevenLabs, pégala aquí para voz de alta calidad.</p>
+                    <button class="btn-secondary btn-full" id="btn-test-api" style="margin-top:0.5rem;">🔗 Probar Conexión</button>
                     <div id="api-status" class="preview-status hidden"></div>
                 </div>
 
                 <div class="voice-section">
                     <label>Selecciona una voz</label>
                     <div class="voice-options" id="voice-options">
-                        <!-- Voices will be loaded dynamically -->
-                        <div class="voice-loading">Cargando voces de ElevenLabs...</div>
+                        <div class="voice-loading">Cargando voces...</div>
                     </div>
                 </div>
 
@@ -194,90 +131,23 @@
                 <div class="visual-section">
                     <label>Tipo de fondo</label>
                     <div class="bg-type-selector">
-                        <button class="bg-type-btn active" data-bg="gradient">
-                            <span>🌈</span>
-                            <span>Gradiente</span>
-                        </button>
-                        <button class="bg-type-btn" data-bg="solid">
-                            <span>⬛</span>
-                            <span>Sólido</span>
-                        </button>
-                        <button class="bg-type-btn" data-bg="particles">
-                            <span>✨</span>
-                            <span>Partículas</span>
-                        </button>
-                        <button class="bg-type-btn" data-bg="image">
-                            <span>🖼️</span>
-                            <span>Imagen</span>
-                        </button>
+                        <button class="bg-type-btn active" data-bg="gradient">🌈 Gradiente</button>
+                        <button class="bg-type-btn" data-bg="solid">⬛ Sólido</button>
+                        <button class="bg-type-btn" data-bg="image">🖼️ Imagen AI</button>
                     </div>
                 </div>
 
                 <div class="visual-section" id="gradient-section">
                     <label>Gradiente</label>
                     <div class="gradient-grid">
-                        <div class="gradient-card active" data-gradient="sunset" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #ff9ff3);">
-                            <span class="gradient-name">Sunset</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="ocean" style="background: linear-gradient(135deg, #00d2ff, #3a7bd5, #00d2ff);">
-                            <span class="gradient-name">Ocean</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="neon" style="background: linear-gradient(135deg, #b721ff, #21d4fd, #b721ff);">
-                            <span class="gradient-name">Neon</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="forest" style="background: linear-gradient(135deg, #11998e, #38ef7d, #11998e);">
-                            <span class="gradient-name">Forest</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="fire" style="background: linear-gradient(135deg, #f12711, #f5af19, #f12711);">
-                            <span class="gradient-name">Fire</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="midnight" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);">
-                            <span class="gradient-name">Midnight</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="candy" style="background: linear-gradient(135deg, #ff9a9e, #fecfef, #ff9a9e);">
-                            <span class="gradient-name">Candy</span>
-                        </div>
-                        <div class="gradient-card" data-gradient="cyber" style="background: linear-gradient(135deg, #ff00cc, #333399, #ff00cc);">
-                            <span class="gradient-name">Cyber</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="visual-section">
-                    <label>Filtro de video</label>
-                    <div class="filter-grid">
-                        <div class="filter-card active" data-filter="none">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2);"></div>
-                            <span>Normal</span>
-                        </div>
-                        <div class="filter-card" data-filter="vintage">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: sepia(0.6) contrast(1.2) brightness(0.9);"></div>
-                            <span>Vintage</span>
-                        </div>
-                        <div class="filter-card" data-filter="cinematic">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: contrast(1.3) saturate(1.2) brightness(0.9);"></div>
-                            <span>Cine</span>
-                        </div>
-                        <div class="filter-card" data-filter="neon-glow">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: saturate(2) brightness(1.2) hue-rotate(15deg);"></div>
-                            <span>Neon</span>
-                        </div>
-                        <div class="filter-card" data-filter="dramatic">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: contrast(1.5) brightness(0.8);"></div>
-                            <span>Drama</span>
-                        </div>
-                        <div class="filter-card" data-filter="warm">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: sepia(0.3) saturate(1.5) brightness(1.1);"></div>
-                            <span>Cálido</span>
-                        </div>
-                        <div class="filter-card" data-filter="cool">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: hue-rotate(180deg) saturate(1.3) brightness(1.05);"></div>
-                            <span>Frío</span>
-                        </div>
-                        <div class="filter-card" data-filter="blackwhite">
-                            <div class="filter-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); filter: grayscale(1) contrast(1.2);"></div>
-                            <span>B/N</span>
-                        </div>
+                        <div class="gradient-card active" data-gradient="sunset" style="background: linear-gradient(135deg, #ff6b6b, #feca57);"><span class="gradient-name">Sunset</span></div>
+                        <div class="gradient-card" data-gradient="ocean" style="background: linear-gradient(135deg, #00d2ff, #3a7bd5);"><span class="gradient-name">Ocean</span></div>
+                        <div class="gradient-card" data-gradient="neon" style="background: linear-gradient(135deg, #b721ff, #21d4fd);"><span class="gradient-name">Neon</span></div>
+                        <div class="gradient-card" data-gradient="forest" style="background: linear-gradient(135deg, #11998e, #38ef7d);"><span class="gradient-name">Forest</span></div>
+                        <div class="gradient-card" data-gradient="fire" style="background: linear-gradient(135deg, #f12711, #f5af19);"><span class="gradient-name">Fire</span></div>
+                        <div class="gradient-card" data-gradient="midnight" style="background: linear-gradient(135deg, #0f0c29, #302b63);"><span class="gradient-name">Midnight</span></div>
+                        <div class="gradient-card" data-gradient="candy" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);"><span class="gradient-name">Candy</span></div>
+                        <div class="gradient-card" data-gradient="cyber" style="background: linear-gradient(135deg, #ff00cc, #333399);"><span class="gradient-name">Cyber</span></div>
                     </div>
                 </div>
 
@@ -285,7 +155,7 @@
                     <label>Estilo de subtítulos</label>
                     <div class="subtitle-style-grid">
                         <div class="subtitle-style-card active" data-substyle="tiktok">
-                            <div class="subtitle-preview" style="font-family: 'Montserrat', sans-serif; font-weight: 900; text-transform: uppercase; color: #fff; text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">TikTok Bold</div>
+                            <div class="subtitle-preview" style="font-family: 'Montserrat', sans-serif; font-weight: 900; color: #fff; text-shadow: 3px 3px 0 #000;">TikTok Bold</div>
                             <span>TikTok Bold</span>
                         </div>
                         <div class="subtitle-style-card" data-substyle="minimal">
@@ -293,51 +163,9 @@
                             <span>Minimal</span>
                         </div>
                         <div class="subtitle-style-card" data-substyle="neon">
-                            <div class="subtitle-preview" style="font-family: 'Bebas Neue', sans-serif; font-weight: 400; text-transform: uppercase; color: #0ff; text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;">Neon Glow</div>
+                            <div class="subtitle-preview" style="font-family: 'Bebas Neue', sans-serif; color: #0ff; text-shadow: 0 0 10px #0ff;">Neon Glow</div>
                             <span>Neon Glow</span>
                         </div>
-                        <div class="subtitle-style-card" data-substyle="retro">
-                            <div class="subtitle-preview" style="font-family: 'Courier New', monospace; font-weight: 700; text-transform: uppercase; color: #0f0; text-shadow: 0 0 5px #0f0;">Retro Terminal</div>
-                            <span>Retro</span>
-                        </div>
-                        <div class="subtitle-style-card" data-substyle="elegant">
-                            <div class="subtitle-preview" style="font-family: 'Georgia', serif; font-weight: 400; color: #f5f5dc; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">Elegant</div>
-                            <span>Elegant</span>
-                        </div>
-                        <div class="subtitle-style-card" data-substyle="impact">
-                            <div class="subtitle-preview" style="font-family: 'Impact', sans-serif; font-weight: 400; text-transform: uppercase; color: #ff0; text-shadow: 3px 3px 0 #f00, -1px -1px 0 #f00;">Impact</div>
-                            <span>Impact</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="visual-section">
-                    <label>Animación de subtítulos</label>
-                    <div class="anim-selector">
-                        <button class="anim-btn active" data-anim="typewriter">
-                            <span class="anim-demo">⌨️</span>
-                            <span>Typewriter</span>
-                        </button>
-                        <button class="anim-btn" data-anim="fade">
-                            <span class="anim-demo">👻</span>
-                            <span>Fade</span>
-                        </button>
-                        <button class="anim-btn" data-anim="bounce">
-                            <span class="anim-demo">🏀</span>
-                            <span>Bounce</span>
-                        </button>
-                        <button class="anim-btn" data-anim="slide">
-                            <span class="anim-demo">➡️</span>
-                            <span>Slide</span>
-                        </button>
-                        <button class="anim-btn" data-anim="zoom">
-                            <span class="anim-demo">🔍</span>
-                            <span>Zoom</span>
-                        </button>
-                        <button class="anim-btn" data-anim="glitch">
-                            <span class="anim-demo">👾</span>
-                            <span>Glitch</span>
-                        </button>
                     </div>
                 </div>
 
@@ -359,17 +187,10 @@
 
             <!-- Step 4: Export -->
             <div class="step-panel" id="step-4">
-                <!-- Progress -->
                 <div id="generation-progress">
                     <div class="progress-section">
                         <div class="progress-ring">
                             <svg viewBox="0 0 120 120">
-                                <defs>
-                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                        <stop offset="0%" style="stop-color:#ff0050"/>
-                                        <stop offset="100%" style="stop-color:#ff6b00"/>
-                                    </linearGradient>
-                                </defs>
                                 <circle class="progress-bg" cx="60" cy="60" r="54"/>
                                 <circle class="progress-fill" id="progress-circle" cx="60" cy="60" r="54"/>
                             </svg>
@@ -378,32 +199,13 @@
                                 <span id="progress-label">Generando...</span>
                             </div>
                         </div>
-                        <div class="progress-steps">
-                            <div class="progress-step active" id="step-generate-audio">
-                                <span class="step-icon">🎙️</span>
-                                <span>Generando audio ElevenLabs</span>
-                            </div>
-                            <div class="progress-step" id="step-render-frames">
-                                <span class="step-icon">🎨</span>
-                                <span>Renderizando frames</span>
-                            </div>
-                            <div class="progress-step" id="step-encode-video">
-                                <span class="step-icon">🎬</span>
-                                <span>Codificando video</span>
-                            </div>
-                            <div class="progress-step" id="step-finalize">
-                                <span class="step-icon">✅</span>
-                                <span>Finalizando</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Result -->
                 <div id="export-result" class="hidden">
                     <div class="result-section">
                         <div class="result-video-container">
-                            <video id="result-video" controls playsinline poster=""></video>
+                            <video id="result-video" controls playsinline></video>
                         </div>
                         <div class="video-info">
                             <div class="info-item">
@@ -416,24 +218,12 @@
                             </div>
                         </div>
                         <div class="export-actions">
-                            <button class="btn-primary btn-large" id="btn-download">
-                                ⬇️ Descargar Video
-                            </button>
-                            <div class="link-section">
-                                <label>Enlace del video:</label>
-                                <div class="link-input-group">
-                                    <input type="text" id="download-link" readonly>
-                                    <button class="btn-secondary" id="btn-copy-link">📋</button>
-                                </div>
-                            </div>
-                            <button class="btn-outline btn-full" id="btn-create-new">
-                                ✨ Crear otro Short
-                            </button>
+                            <button class="btn-primary btn-large" id="btn-download">⬇️ Descargar Video</button>
+                            <button class="btn-outline btn-full" id="btn-create-new">✨ Crear otro Short</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Back button for error state -->
                 <div id="export-back-row" class="hidden btn-row">
                     <button class="btn-outline btn-full" id="btn-back-error">← Volver e intentar de nuevo</button>
                 </div>
@@ -446,109 +236,7 @@
                 <h2>🎨 Plantillas</h2>
                 <p>Comienza rápido con contenido predefinido</p>
             </div>
-            <div class="templates-grid" id="templates-grid">
-                <!-- Templates rendered by JS -->
-            </div>
-        </div>
-
-        <!-- Tab: Gallery -->
-        <div class="tab-content" id="tab-gallery">
-            <div class="gallery-header">
-                <h2>🎬 Mis Shorts</h2>
-                <p>Todos los videos que has creado</p>
-            </div>
-            <div class="gallery-grid" id="gallery-grid">
-                <!-- Gallery rendered by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Settings -->
-    <div class="modal hidden" id="modal-settings">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>⚙️ Configuración</h3>
-                <button class="btn-close-modal">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="setting-item">
-                    <label>Calidad de video</label>
-                    <select id="setting-quality">
-                        <option value="720">720p (Recomendado)</option>
-                        <option value="1080">1080p</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label>FPS</label>
-                    <select id="setting-fps">
-                        <option value="24">24 FPS</option>
-                        <option value="30" selected>30 FPS</option>
-                    </select>
-                </div>
-                <div class="setting-item">
-                    <label>Tamaño de fuente</label>
-                    <input type="range" id="setting-fontsize" min="20" max="48" value="28">
-                    <span id="fontsize-value">28px</span>
-                </div>
-                <div class="setting-item">
-                    <label>Guardar automáticamente</label>
-                    <label class="toggle">
-                        <input type="checkbox" id="setting-autosave" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Help -->
-    <div class="modal hidden" id="modal-help">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>❓ Ayuda</h3>
-                <button class="btn-close-modal">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="help-section">
-                    <h4>🚀 Cómo usar ShortsGen Pro</h4>
-                    <ol>
-                        <li><strong>Escribe tu guion</strong> en el paso 1. Puedes usar una plantilla.</li>
-                        <li><strong>Configura tu voz ElevenLabs</strong> en el paso 2. Necesitas una API Key gratuita.</li>
-                        <li><strong>Personaliza el diseño</strong> con gradientes, filtros y subtítulos.</li>
-                        <li><strong>Genera y descarga</strong> tu Short en formato MP4.</li>
-                    </ol>
-                </div>
-                <div class="help-section">
-                    <h4>🔑 API Key de ElevenLabs</h4>
-                    <ul>
-                        <li>Ve a <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a> y crea una cuenta gratuita.</li>
-                        <li>En <strong>Settings → API Keys</strong> genera una nueva key.</li>
-                        <li>Pega la key en el paso 2 de la app.</li>
-                        <li>La versión gratuita incluye <strong>10,000 caracteres/mes</strong>.</li>
-                    </ul>
-                </div>
-                <div class="help-section">
-                <div class="help-section">
-                    <h4>🎨 Imágenes con IA (Gratis)</h4>
-                    <ul>
-                        <li>Selecciona <strong>"Imagen"</strong> como tipo de fondo en el Paso 3.</li>
-                        <li>Haz clic en <strong>"Generar imagen con IA"</strong>.</li>
-                        <li>Usa <strong>Pollinations AI</strong> - 100% gratuito, sin API key.</li>
-                        <li>La imagen se genera automáticamente basada en tu guion.</li>
-                        <li>Si falla, puedes usar gradientes o colores sólidos como alternativa.</li>
-                    </ul>
-                </div>
-                    <h4>⚠️ Notas importantes</h4>
-                    <ul>
-                        <li>La generación de video usa el procesador de tu dispositivo.</li>
-                        <li>En móviles, usa duraciones cortas (15-30s) para mejor rendimiento.</li>
-                        <li>Opera y Chrome funcionan mejor que Safari para esta app.</li>
-                        <li>Los videos se guardan localmente en tu navegador.</li>
-                    </ul>
-                </div>
-            </div>
+            <div class="templates-grid" id="templates-grid"></div>
         </div>
     </div>
 
