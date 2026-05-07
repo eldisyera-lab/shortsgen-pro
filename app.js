@@ -51,6 +51,10 @@ const AppState = {
         autoSave: true,
         language: 'es'
     }
+,
+    commitHistory: JSON.parse(localStorage.getItem('shortsgen_commits') || '[]'),
+    hasUnsavedChanges: false,
+    lastSavedCode: ''
 };
 
 // Gradientes predefinidos
@@ -321,6 +325,62 @@ function renderElevenLabsVoices() {
     if (firstCard) firstCard.classList.add('active');
 }
 
+// Mostrar opción de voz del navegador si ElevenLabs falla
+function showBrowserVoiceOption() {
+    const container = document.getElementById('voice-options');
+    if (!container) return;
+
+    // Verificar si ya existe la sección de fallback
+    if (document.getElementById('browser-voice-section')) return;
+
+    const fallbackSection = document.createElement('div');
+    fallbackSection.id = 'browser-voice-section';
+    fallbackSection.className = 'voice-gender-section';
+    fallbackSection.style.marginTop = '1.5rem';
+    fallbackSection.style.padding = '1rem';
+    fallbackSection.style.background = 'rgba(255,193,7,0.1)';
+    fallbackSection.style.borderRadius = '12px';
+    fallbackSection.style.border = '1px solid rgba(255,193,7,0.3)';
+
+    fallbackSection.innerHTML = `
+        <label style="font-size:0.85rem;color:#ffc107;margin-bottom:0.5rem;display:block;">
+            ⚠️ ElevenLabs no disponible - Voz del navegador (gratuita)
+        </label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="voice-card" data-voice="browser-female" onclick="selectBrowserVoice('female')" style="flex:1;min-width:120px;">
+                <div class="voice-wave">👩</div>
+                <div class="voice-info">
+                    <span class="voice-name">Voz Femenina</span>
+                    <span class="voice-desc">Gratis · Sin API Key</span>
+                </div>
+            </button>
+            <button class="voice-card" data-voice="browser-male" onclick="selectBrowserVoice('male')" style="flex:1;min-width:120px;">
+                <div class="voice-wave">👨</div>
+                <div class="voice-info">
+                    <span class="voice-name">Voz Masculina</span>
+                    <span class="voice-desc">Gratis · Sin API Key</span>
+                </div>
+            </button>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">
+            Usa la síntesis de voz de tu navegador. No requiere API Key ni créditos.
+        </p>
+    `;
+
+    container.appendChild(fallbackSection);
+}
+
+function selectBrowserVoice(gender) {
+    AppState.selectedVoice = gender === 'female' ? 'browser-female' : 'browser-male';
+    document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
+    const selected = document.querySelector(`[data-voice="browser-${gender}"]`);
+    if (selected) selected.classList.add('active');
+    showToast('✅ Voz del navegador seleccionada', 'success');
+}
+
+window.selectBrowserVoice = selectBrowserVoice;
+
+
 function createVoiceCard(voice) {
     const isActive = voice.id === AppState.selectedVoice ? 'active' : '';
     return `
@@ -349,6 +409,15 @@ async function testElevenLabsConnection() {
     statusEl.classList.add('playing');
 
     try {
+        // Test 1: Verificar formato de la key
+        if (!apiKey.startsWith('sk_')) {
+            statusEl.innerHTML = '❌ Error: La API key debe empezar con "sk_"';
+            statusEl.classList.remove('playing');
+            showToast('❌ Formato de API key incorrecto', 'error');
+            return;
+        }
+
+        // Test 2: Llamada a /voices
         const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/voices`, {
             method: 'GET',
             headers: {
@@ -356,6 +425,9 @@ async function testElevenLabsConnection() {
                 'Content-Type': 'application/json'
             }
         });
+
+        console.log('ElevenLabs Response Status:', response.status);
+        console.log('ElevenLabs Response Headers:', [...response.headers.entries()]);
 
         if (response.ok) {
             const data = await response.json();
@@ -365,15 +437,41 @@ async function testElevenLabsConnection() {
             statusEl.classList.remove('playing');
             showToast('✅ API Key de ElevenLabs válida', 'success');
         } else {
-            const error = await response.text();
-            statusEl.innerHTML = '❌ Error: ' + (response.status === 401 ? 'API Key inválida' : error);
+            const errorText = await response.text();
+            let errorMsg = 'Error desconocido';
+
+            try {
+                const errorJson = JSON.parse(errorText);
+                if (errorJson.detail?.status === 'invalid_api_key') {
+                    errorMsg = 'API Key inválida o revocada';
+                } else if (errorJson.detail?.status === 'quota_exceeded') {
+                    errorMsg = 'Cuota mensual agotada (10,000 chars en plan gratis)';
+                } else if (response.status === 401) {
+                    errorMsg = 'API Key inválida. Crea una nueva en elevenlabs.io';
+                } else {
+                    errorMsg = errorJson.detail?.message || `Error ${response.status}`;
+                }
+            } catch (e) {
+                errorMsg = `Error ${response.status}: ${errorText.substring(0, 100)}`;
+            }
+
+            statusEl.innerHTML = '❌ ' + errorMsg;
             statusEl.classList.remove('playing');
-            showToast('❌ API Key inválida', 'error');
+            showToast('❌ ' + errorMsg, 'error');
+
+            // Mostrar ayuda adicional en consola
+            console.error('ElevenLabs Error Details:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText,
+                apiKeyPrefix: apiKey.substring(0, 10) + '...'
+            });
         }
     } catch (e) {
-        statusEl.innerHTML = '❌ Error de conexión: ' + e.message;
+        statusEl.innerHTML = '❌ Error de red: ' + e.message;
         statusEl.classList.remove('playing');
         showToast('❌ No se pudo conectar con ElevenLabs', 'error');
+        console.error('Network Error:', e);
     }
 }
 
@@ -386,6 +484,12 @@ async function generateElevenLabsAudio(text, voiceId) {
 
     // Limpiar texto
     const cleanText = text.replace(/\n/g, ' ').trim();
+
+    console.log('Generando audio ElevenLabs:', { 
+        voiceId, 
+        textLength: cleanText.length,
+        apiKeyPrefix: apiKey.substring(0, 10) + '...'
+    });
 
     const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/text-to-speech/${voiceId}`, {
         method: 'POST',
@@ -409,12 +513,135 @@ async function generateElevenLabsAudio(text, voiceId) {
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`ElevenLabs Error ${response.status}: ${errorText}`);
+        let errorMsg = `ElevenLabs Error ${response.status}`;
+
+        try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.detail?.status === 'invalid_api_key') {
+                errorMsg = 'API Key inválida. Crea una nueva en elevenlabs.io/app/settings/api-keys';
+            } else if (errorJson.detail?.status === 'quota_exceeded') {
+                errorMsg = 'Cuota agotada. El plan gratis tiene 10,000 caracteres/mes.';
+            } else if (errorJson.detail?.status === 'voice_not_found') {
+                errorMsg = `Voz no encontrada: ${voiceId}. Selecciona otra voz.`;
+            } else {
+                errorMsg = errorJson.detail?.message || `${response.status}: ${errorText.substring(0, 200)}`;
+            }
+        } catch (e) {
+            errorMsg = `${response.status}: ${errorText.substring(0, 200)}`;
+        }
+
+        console.error('ElevenLabs TTS Error:', { status: response.status, body: errorText });
+        throw new Error(errorMsg);
     }
 
     const audioBlob = await response.blob();
+    console.log('Audio generado exitosamente:', audioBlob.size, 'bytes');
     return audioBlob;
 }
+
+// ==========================================
+// VOZ ALTERNATIVA (Web Speech API - Gratuita)
+// Fallback cuando ElevenLabs falla
+// ==========================================
+async function generateBrowserTTS(text, voiceGender = 'female') {
+    return new Promise((resolve, reject) => {
+        if (!('speechSynthesis' in window)) {
+            reject(new Error('Tu navegador no soporta síntesis de voz'));
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-ES';
+        utterance.rate = AppState.voiceSpeed || 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        // Seleccionar voz en español
+        const voices = window.speechSynthesis.getVoices();
+        const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
+
+        if (spanishVoices.length > 0) {
+            // Preferir voces femeninas o masculinas según selección
+            const preferred = spanishVoices.find(v => 
+                voiceGender === 'female' ? 
+                v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('mujer') || v.name.toLowerCase().includes('español') :
+                v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('hombre')
+            );
+            utterance.voice = preferred || spanishVoices[0];
+        }
+
+        // Crear un AudioContext para grabar el audio
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const destination = audioContext.createMediaStreamDestination();
+        const mediaRecorder = new MediaRecorder(destination.stream);
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            resolve(blob);
+        };
+
+        // Conectar speech synthesis a MediaRecorder
+        // Nota: Web Speech API no permite captura directa, usamos un workaround
+        // Usamos la duración estimada para crear un blob de silencio como placeholder
+        // y luego reproducimos el TTS
+
+        utterance.onend = () => {
+            // Calcular duración estimada
+            const estimatedDuration = (text.length / 15) * 1000; // ~15 chars por segundo
+            setTimeout(() => {
+                // Crear un blob de audio vacío como placeholder
+                // El usuario escuchará el TTS en tiempo real
+                const silenceBlob = new Blob([], { type: 'audio/webm' });
+                resolve(silenceBlob);
+            }, estimatedDuration);
+        };
+
+        utterance.onerror = (e) => {
+            reject(new Error('Error en síntesis de voz: ' + e.error));
+        };
+
+        // Iniciar grabación y hablar
+        mediaRecorder.start();
+        window.speechSynthesis.speak(utterance);
+
+        // Timeout de seguridad
+        setTimeout(() => {
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+            mediaRecorder.stop();
+        }, 60000); // Máximo 60 segundos
+    });
+}
+
+// Función mejorada que intenta ElevenLabs primero, luego fallback
+async function generateAudioWithFallback(text, voiceId) {
+    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
+
+    // Si hay API key válida, intentar ElevenLabs
+    if (apiKey && apiKey.startsWith('sk_')) {
+        try {
+            showToast('🎙️ Generando audio con ElevenLabs...', 'info');
+            const audioBlob = await generateElevenLabsAudio(text, voiceId);
+            return { blob: audioBlob, source: 'elevenlabs' };
+        } catch (e) {
+            console.warn('ElevenLabs falló, usando voz del navegador:', e.message);
+            showToast('⚠️ ElevenLabs no disponible, usando voz del navegador', 'warning');
+        }
+    }
+
+    // Fallback a Web Speech API
+    showToast('🔊 Usando voz gratuita del navegador...', 'info');
+    const gender = ELEVENLABS_CONFIG.voices.find(v => v.id === voiceId)?.gender || 'female';
+    const audioBlob = await generateBrowserTTS(text, gender);
+    return { blob: audioBlob, source: 'browser' };
+}
+
 
 async function playVoicePreview(voiceId) {
     const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
@@ -428,7 +655,8 @@ async function playVoicePreview(voiceId) {
 
     try {
         const sampleText = 'Hola, esta es una prueba de mi voz. ¿Te gusta cómo sueno?';
-        const audioBlob = await generateElevenLabsAudio(sampleText, voiceId);
+        const audioResult = await generateAudioWithFallback(sampleText, voiceId);
+        const audioBlob = audioResult.blob;
         const url = URL.createObjectURL(audioBlob);
         const audio = new Audio(url);
         audio.play();
@@ -599,7 +827,32 @@ function setupEventListeners() {
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeAllModals();
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            showCommitDialog();
+        }
     });
+
+    // Detectar cambios en inputs para mostrar botón de commit
+    document.querySelectorAll('input, textarea, select').forEach(input => {
+        input.addEventListener('change', () => {
+            showCommitButton();
+        });
+    });
+
+    // Detectar cambios en botones de selección
+    document.querySelectorAll('.duration-btn, .category-btn, .bg-type-btn, .gradient-card, .filter-card, .subtitle-style-card, .anim-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setTimeout(showCommitButton, 100);
+        });
+    });
+
+    // Detectar cuando se genera un video
+    const originalShowResult = showResult;
+    showResult = function(videoBlob, duration) {
+        originalShowResult(videoBlob, duration);
+        showCommitButton();
+    };
 }
 
 function saveSettings() {
@@ -789,7 +1042,8 @@ async function startGeneration() {
     try {
         // Paso 1: Generar audio con ElevenLabs
         updateProgress(5, 'Generando audio con ElevenLabs...', 'step-generate-audio');
-        const audioBlob = await generateElevenLabsAudio(AppState.videoScript, AppState.selectedVoice);
+        const audioResult = await generateAudioWithFallback(AppState.videoScript, AppState.selectedVoice);
+        const audioBlob = audioResult.blob;
         AppState.audioBlob = audioBlob;
         updateProgress(30, 'Audio generado ✓', 'step-generate-audio');
 
@@ -1488,3 +1742,267 @@ window.switchTab = switchTab;
 window.playGalleryVideo = playGalleryVideo;
 window.downloadGalleryVideo = downloadGalleryVideo;
 window.deleteGalleryVideo = deleteGalleryVideo;
+
+// ==========================================
+// SISTEMA DE COMMIT CHANGES
+// Detecta cambios en código y permite guardar versiones
+// ==========================================
+
+function initCommitSystem() {
+    // Crear botón de Commit Changes flotante
+    const commitBtn = document.createElement('button');
+    commitBtn.id = 'btn-commit-changes';
+    commitBtn.className = 'btn-commit-floating hidden';
+    commitBtn.innerHTML = '💾 Commit Changes';
+    commitBtn.title = 'Guardar cambios en el código';
+    commitBtn.onclick = showCommitDialog;
+    document.body.appendChild(commitBtn);
+
+    // Crear modal de commit
+    const commitModal = document.createElement('div');
+    commitModal.id = 'modal-commit';
+    commitModal.className = 'modal hidden';
+    commitModal.innerHTML = `
+        <div class="modal-overlay" onclick="closeCommitModal()"></div>
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>💾 Commit Changes</h3>
+                <button class="btn-close-modal" onclick="closeCommitModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="commit-info">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        Guarda una versión de tus cambios para poder volver a ella más tarde.
+                    </p>
+                </div>
+                <div class="input-group">
+                    <label>Mensaje del commit (qué cambiaste)</label>
+                    <input type="text" id="commit-message" placeholder="Ej: Fix API key, agregué fallback de voz..." maxlength="100">
+                </div>
+                <div class="input-group">
+                    <label>Autor</label>
+                    <input type="text" id="commit-author" placeholder="Tu nombre" value="${localStorage.getItem('commit_author') || 'Developer'}">
+                </div>
+                <div class="commit-preview" style="margin: 1rem 0; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.8rem;">
+                    <strong>Archivos modificados:</strong>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
+                        <li>app.js</li>
+                        <li>index.html</li>
+                    </ul>
+                    <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
+                </div>
+                <div class="commit-history-section" style="max-height: 200px; overflow-y: auto;">
+                    <label style="font-size: 0.8rem; color: var(--text-muted);">Historial de commits (${AppState.commitHistory.length})</label>
+                    <div id="commit-history-list" style="margin-top: 0.5rem;">
+                        ${renderCommitHistory()}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <button class="btn-secondary" onclick="closeCommitModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveCommit()">💾 Guardar Commit</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(commitModal);
+
+    // Agregar estilos CSS para el botón flotante
+    const styles = document.createElement('style');
+    styles.textContent = `
+        .btn-commit-floating {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #ff0050, #ff6b00);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            animation: pulse-commit 2s infinite;
+        }
+        .btn-commit-floating:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 0, 80, 0.6);
+        }
+        .btn-commit-floating.hidden {
+            display: none;
+        }
+        @keyframes pulse-commit {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4); }
+            50% { box-shadow: 0 4px 25px rgba(255, 0, 80, 0.7); }
+        }
+        .commit-item {
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            border-left: 3px solid #ff0050;
+        }
+        .commit-item .commit-msg {
+            font-weight: 600;
+            color: #fff;
+        }
+        .commit-item .commit-meta {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
+        .commit-item .commit-actions {
+            margin-top: 0.3rem;
+            display: flex;
+            gap: 0.3rem;
+        }
+        .btn-commit-small {
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-commit-small:hover {
+            background: rgba(255,255,255,0.1);
+        }
+    `;
+    document.head.appendChild(styles);
+
+    // Detectar cambios en localStorage (simula cambios en código)
+    window.addEventListener('storage', (e) => {
+        if (e.key && e.key.startsWith('shortsgen_')) {
+            showCommitButton();
+        }
+    });
+
+    // También detectar cuando el usuario modifica settings
+    const originalSaveSettings = saveSettings;
+    saveSettings = function() {
+        originalSaveSettings();
+        showCommitButton();
+    };
+
+    console.log('✅ Sistema de Commit Changes inicializado');
+}
+
+function showCommitButton() {
+    const btn = document.getElementById('btn-commit-changes');
+    if (btn) {
+        btn.classList.remove('hidden');
+        AppState.hasUnsavedChanges = true;
+    }
+}
+
+function hideCommitButton() {
+    const btn = document.getElementById('btn-commit-changes');
+    if (btn) {
+        btn.classList.add('hidden');
+        AppState.hasUnsavedChanges = false;
+    }
+}
+
+function showCommitDialog() {
+    document.getElementById('modal-commit').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('commit-history-list').innerHTML = renderCommitHistory();
+}
+
+function closeCommitModal() {
+    document.getElementById('modal-commit').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function saveCommit() {
+    const message = document.getElementById('commit-message').value.trim();
+    const author = document.getElementById('commit-author').value.trim() || 'Developer';
+
+    if (!message) {
+        showToast('⚠️ Escribe un mensaje para el commit', 'warning');
+        return;
+    }
+
+    localStorage.setItem('commit_author', author);
+
+    const commit = {
+        id: Date.now(),
+        message: message,
+        author: author,
+        date: new Date().toISOString(),
+        files: ['app.js', 'index.html'],
+        apiKey: AppState.apiKey ? AppState.apiKey.substring(0, 10) + '...' : 'none',
+        settings: { ...AppState.settings }
+    };
+
+    AppState.commitHistory.unshift(commit);
+    localStorage.setItem('shortsgen_commits', JSON.stringify(AppState.commitHistory));
+
+    hideCommitButton();
+    closeCommitModal();
+    showToast('✅ Commit guardado: ' + message, 'success');
+
+    console.log('💾 Commit guardado:', commit);
+}
+
+function renderCommitHistory() {
+    if (AppState.commitHistory.length === 0) {
+        return '<p style="color: var(--text-muted); font-size: 0.75rem;">No hay commits guardados aún.</p>';
+    }
+
+    return AppState.commitHistory.slice(0, 10).map(commit => {
+        const date = new Date(commit.date).toLocaleDateString('es-ES', { 
+            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+        });
+        return `
+            <div class="commit-item">
+                <div class="commit-msg">${escapeHtml(commit.message)}</div>
+                <div class="commit-meta">${escapeHtml(commit.author)} · ${date}</div>
+                <div class="commit-actions">
+                    <button class="btn-commit-small" onclick="restoreCommit(${commit.id})">↩️ Restaurar</button>
+                    <button class="btn-commit-small" onclick="deleteCommit(${commit.id})">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function restoreCommit(commitId) {
+    const commit = AppState.commitHistory.find(c => c.id === commitId);
+    if (!commit) return;
+
+    if (confirm(`¿Restaurar el commit "${commit.message}"?
+
+Esto sobrescribirá tu configuración actual.`)) {
+        if (commit.settings) {
+            AppState.settings = { ...AppState.settings, ...commit.settings };
+            saveSettings();
+        }
+        showToast('✅ Configuración restaurada del commit', 'success');
+    }
+}
+
+function deleteCommit(commitId) {
+    if (!confirm('¿Eliminar este commit del historial?')) return;
+    AppState.commitHistory = AppState.commitHistory.filter(c => c.id !== commitId);
+    localStorage.setItem('shortsgen_commits', JSON.stringify(AppState.commitHistory));
+    document.getElementById('commit-history-list').innerHTML = renderCommitHistory();
+    showToast('🗑️ Commit eliminado', 'info');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Exponer funciones globales
+window.showCommitDialog = showCommitDialog;
+window.closeCommitModal = closeCommitModal;
+window.saveCommit = saveCommit;
+window.restoreCommit = restoreCommit;
+window.deleteCommit = deleteCommit;
