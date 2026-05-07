@@ -6,6 +6,92 @@
 // ==========================================
 // CONFIGURACIÓN ELEVENLABS
 // ==========================================
+// ==========================================
+// CONFIGURACIÓN DE IMÁGENES AI (Pollinations - Gratis, sin API Key)
+// ==========================================
+const POLLINATIONS_CONFIG = {
+    baseUrl: 'https://image.pollinations.ai/prompt',
+    // Modelos disponibles: flux, turbo, pixart, delib3, etc.
+    defaultModel: 'flux',
+    // Parámetros de calidad
+    width: 720,
+    height: 1280,
+    seed: null, // null = random cada vez
+    nologo: true,
+    negativePrompt: 'blurry, low quality, distorted, ugly, deformed'
+};
+
+
+// ==========================================
+// GENERACIÓN DE IMÁGENES CON AI (Pollinations - Gratis)
+// ==========================================
+
+function generateImagePrompt(title, script, category) {
+    // Crear un prompt optimizado basado en el contenido del Short
+    const cleanScript = script.replace(/\n/g, ' ').substring(0, 200);
+
+    const prompts = {
+        motivacion: `Cinematic motivational scene: ${title}. ${cleanScript}. Dramatic lighting, inspiring atmosphere, high quality, 4k, professional photography style, vibrant colors, text space at bottom`,
+        educacion: `Educational infographic style: ${title}. ${cleanScript}. Clean design, colorful diagrams, white background, modern illustration, high quality, clear text, academic style`,
+        cocina: `Delicious food photography: ${title}. ${cleanScript}. Appetizing presentation, warm lighting, professional food styling, kitchen background, high quality, 4k, vibrant colors`,
+        entretenimiento: `Entertainment scene: ${title}. ${cleanScript}. Dynamic composition, engaging visuals, colorful, high energy, professional photography, cinematic style`,
+        tecnologia: `Futuristic tech visualization: ${title}. ${cleanScript}. Neon accents, dark background, holographic elements, modern tech aesthetic, high quality, 4k`,
+        general: `Professional visual content: ${title}. ${cleanScript}. High quality, engaging composition, vibrant colors, modern style, 4k resolution, cinematic lighting`
+    };
+
+    return prompts[category] || prompts.general;
+}
+
+async function generateAIImage(prompt, model = 'flux') {
+    try {
+        showToast('🎨 Generando imagen con IA...', 'info');
+
+        // Codificar el prompt para URL
+        const encodedPrompt = encodeURIComponent(prompt);
+
+        // Construir URL de Pollinations AI (100% gratis, sin API key)
+        const imageUrl = `${POLLINATIONS_CONFIG.baseUrl}/${encodedPrompt}?` +
+            `width=${POLLINATIONS_CONFIG.width}&` +
+            `height=${POLLINATIONS_CONFIG.height}&` +
+            `nologo=${POLLINATIONS_CONFIG.nologo}&` +
+            `model=${model}&` +
+            `negative_prompt=${encodeURIComponent(POLLINATIONS_CONFIG.negativePrompt)}` +
+            (POLLINATIONS_CONFIG.seed ? `&seed=${POLLINATIONS_CONFIG.seed}` : '');
+
+        console.log('Generando imagen Pollinations:', imageUrl.substring(0, 100) + '...');
+
+        // Cargar la imagen como blob
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Error generando imagen: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+
+        showToast('✅ Imagen generada exitosamente', 'success');
+        return { blob, objectUrl, url: imageUrl };
+
+    } catch (error) {
+        console.error('Error generando imagen AI:', error);
+        showToast('❌ Error generando imagen: ' + error.message, 'error');
+        return null;
+    }
+}
+
+// Precargar imagen de fondo para el video
+async function generateBackgroundImage() {
+    const prompt = generateImagePrompt(AppState.videoTitle, AppState.videoScript, AppState.category);
+    const result = await generateAIImage(prompt, 'flux');
+
+    if (result) {
+        AppState.aiBackgroundImage = result.objectUrl;
+        return result.objectUrl;
+    }
+    return null;
+}
+
+
 const ELEVENLABS_CONFIG = {
     baseUrl: 'https://api.elevenlabs.io/v1',
     // Voces predefinidas - IDs verificados de ElevenLabs que funcionan en español
@@ -550,72 +636,81 @@ async function generateBrowserTTS(text, voiceGender = 'female') {
             return;
         }
 
+        // Esperar a que las voces estén cargadas
+        let voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                voices = window.speechSynthesis.getVoices();
+            };
+        }
+
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'es-ES';
         utterance.rate = AppState.voiceSpeed || 1.0;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Seleccionar voz en español
-        const voices = window.speechSynthesis.getVoices();
-        const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
+        // Seleccionar voz en español según género
+        const spanishVoices = voices.filter(v => 
+            v.lang && (v.lang.startsWith('es') || v.lang.startsWith('es-'))
+        );
+
+        console.log('Voces españolas disponibles:', spanishVoices.map(v => ({name: v.name, lang: v.lang, gender: v.gender || 'unknown'})));
+
+        let selectedVoice = null;
 
         if (spanishVoices.length > 0) {
-            // Preferir voces femeninas o masculinas según selección
-            const preferred = spanishVoices.find(v => 
-                voiceGender === 'female' ? 
-                v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('mujer') || v.name.toLowerCase().includes('español') :
-                v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('hombre')
+            // Intentar encontrar voz que coincida con el género
+            const femaleKeywords = ['mujer', 'female', 'femenina', 'laura', 'helena', 'elvira', 'monica', 'catalina', 'sabina'];
+            const maleKeywords = ['hombre', 'male', 'masculino', 'pablo', 'jorge', 'diego', 'carlos', 'juan'];
+
+            const keywords = voiceGender === 'female' ? femaleKeywords : maleKeywords;
+
+            selectedVoice = spanishVoices.find(v => 
+                keywords.some(kw => v.name.toLowerCase().includes(kw.toLowerCase()))
             );
-            utterance.voice = preferred || spanishVoices[0];
+
+            // Si no encontramos por género, usar la primera voz española
+            if (!selectedVoice) {
+                selectedVoice = spanishVoices[0];
+            }
+
+            utterance.voice = selectedVoice;
+            console.log('Voz seleccionada:', selectedVoice.name, '- Género esperado:', voiceGender);
+        } else {
+            console.warn('No se encontraron voces en español, usando voz por defecto');
         }
 
-        // Crear un AudioContext para grabar el audio
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const destination = audioContext.createMediaStreamDestination();
-        const mediaRecorder = new MediaRecorder(destination.stream);
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'audio/webm' });
-            resolve(blob);
-        };
-
-        // Conectar speech synthesis a MediaRecorder
-        // Nota: Web Speech API no permite captura directa, usamos un workaround
-        // Usamos la duración estimada para crear un blob de silencio como placeholder
-        // y luego reproducimos el TTS
+        // Crear un canvas para capturar el audio (simulado)
+        // Nota: Web Speech API no permite grabación directa del audio generado
+        // El audio se reproduce en tiempo real y no se puede descargar como archivo
 
         utterance.onend = () => {
-            // Calcular duración estimada
-            const estimatedDuration = (text.length / 15) * 1000; // ~15 chars por segundo
-            setTimeout(() => {
-                // Crear un blob de audio vacío como placeholder
-                // El usuario escuchará el TTS en tiempo real
-                const silenceBlob = new Blob([], { type: 'audio/webm' });
-                resolve(silenceBlob);
-            }, estimatedDuration);
+            console.log('TTS completado');
+            // Como no podemos grabar el audio del navegador directamente,
+            // creamos un blob vacío como placeholder
+            // El usuario escuchará el audio en tiempo real durante la generación
+            const placeholderBlob = new Blob([], { type: 'audio/webm' });
+            resolve(placeholderBlob);
         };
 
         utterance.onerror = (e) => {
-            reject(new Error('Error en síntesis de voz: ' + e.error));
+            console.error('Error TTS:', e);
+            reject(new Error('Error en síntesis de voz: ' + (e.error || 'desconocido')));
         };
 
-        // Iniciar grabación y hablar
-        mediaRecorder.start();
+        // Reproducir el TTS
+        window.speechSynthesis.cancel(); // Cancelar cualquier TTS previo
         window.speechSynthesis.speak(utterance);
 
-        // Timeout de seguridad
+        // Timeout de seguridad (máximo 2 minutos)
         setTimeout(() => {
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
             }
-            mediaRecorder.stop();
-        }, 60000); // Máximo 60 segundos
+            const placeholderBlob = new Blob([], { type: 'audio/webm' });
+            resolve(placeholderBlob);
+        }, 120000);
     });
 }
 
