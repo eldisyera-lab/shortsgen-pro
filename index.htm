@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0f0f23">
-    <title>ShortsGen Pro - Creador de YouTube Shorts</title>
+    <title>ShortsGen Pro v3.0 - Cuba Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- Puter.js para imágenes AI sin API key -->
+    <script src="https://js.puter.com/v2/"></script>
 <base target="_blank">
 </head>
 <body>
@@ -15,7 +17,7 @@
         <div class="splash-content">
             <div class="splash-logo">🎬</div>
             <h1>ShortsGen Pro</h1>
-            <p>Creador de YouTube Shorts</p>
+            <p>v3.0 - Cuba Edition 🇨🇺</p>
             <div class="splash-loader"><div class="loader-bar"></div></div>
         </div>
     </div>
@@ -27,6 +29,9 @@
             <div class="header-brand">
                 <span class="header-icon">🎬</span>
                 <h1>ShortsGen Pro</h1>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="btn-help" title="Ayuda" onclick="showHelp()">❓</button>
             </div>
         </header>
 
@@ -85,23 +90,14 @@
             <!-- Step 2: Voice -->
             <div class="step-panel" id="step-2">
                 <div class="panel-header">
-                    <h2>🎙️ Voz</h2>
-                    <p class="panel-desc">Selecciona una voz para tu Short</p>
-                </div>
-
-                <!-- API Key Section -->
-                <div class="input-group api-key-section">
-                    <label>🔑 API Key de ElevenLabs (Opcional)</label>
-                    <input type="password" id="elevenlabs-api-key" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx">
-                    <p class="hint">Si tienes API Key de ElevenLabs, pégala aquí para voz de alta calidad.</p>
-                    <button class="btn-secondary btn-full" id="btn-test-api" style="margin-top:0.5rem;">🔗 Probar Conexión</button>
-                    <div id="api-status" class="preview-status hidden"></div>
+                    <h2>🎙️ Voz del Navegador</h2>
+                    <p class="panel-desc">Selecciona una voz (Funciona en Cuba sin VPN especial)</p>
                 </div>
 
                 <div class="voice-section">
-                    <label>Selecciona una voz</label>
+                    <label>Selecciona género de voz</label>
                     <div class="voice-options" id="voice-options">
-                        <div class="voice-loading">Cargando voces...</div>
+                        <div class="voice-loading">Cargando opciones de voz...</div>
                     </div>
                 </div>
 
@@ -133,7 +129,7 @@
                     <div class="bg-type-selector">
                         <button class="bg-type-btn active" data-bg="gradient">🌈 Gradiente</button>
                         <button class="bg-type-btn" data-bg="solid">⬛ Sólido</button>
-                        <button class="bg-type-btn" data-bg="image">🖼️ Imagen AI</button>
+                        <button class="bg-type-btn" data-bg="image">🎨 Imagen AI (Puter.js)</button>
                     </div>
                 </div>
 
@@ -191,6 +187,12 @@
                     <div class="progress-section">
                         <div class="progress-ring">
                             <svg viewBox="0 0 120 120">
+                                <defs>
+                                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#ff0050"/>
+                                        <stop offset="100%" style="stop-color:#ff6b00"/>
+                                    </linearGradient>
+                                </defs>
                                 <circle class="progress-bg" cx="60" cy="60" r="54"/>
                                 <circle class="progress-fill" id="progress-circle" cx="60" cy="60" r="54"/>
                             </svg>
@@ -219,7 +221,14 @@
                         </div>
                         <div class="export-actions">
                             <button class="btn-primary btn-large" id="btn-download">⬇️ Descargar Video</button>
-                            <button class="btn-outline btn-full" id="btn-create-new">✨ Crear otro Short</button>
+                            <div class="link-section" style="margin-top:1rem;">
+                                <label>Link del video (para compartir):</label>
+                                <div class="link-input-group" style="display:flex;gap:0.5rem;">
+                                    <input type="text" id="download-link" readonly style="flex:1;">
+                                    <button class="btn-secondary" id="btn-copy-link">📋 Copiar</button>
+                                </div>
+                            </div>
+                            <button class="btn-outline btn-full" id="btn-create-new" style="margin-top:1rem;">✨ Crear otro Short</button>
                         </div>
                     </div>
                 </div>
