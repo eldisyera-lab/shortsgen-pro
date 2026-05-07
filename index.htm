@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f23">
+    <meta name="description" content="Generador profesional de YouTube Shorts con IA">
+    <title>ShortsGen Pro - Creador de YouTube Shorts</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Bebas+Neue&family=Oswald:wght@400;600;700&family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+<base target="_blank">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">🎬</div>
+            <h1>ShortsGen Pro</h1>
+            <p>Creador de YouTube Shorts con IA</p>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Install Prompt -->
+    <div id="install-prompt" class="hidden">
+        <div class="install-card">
+            <span class="install-icon">📱</span>
+            <p>Instala ShortsGen Pro en tu dispositivo</p>
+            <button id="btn-install" class="btn-primary">Instalar Ahora</button>
+            <button id="btn-dismiss-install" class="btn-text">Más tarde</button>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-brand">
+                <span class="header-icon">🎬</span>
+                <h1>ShortsGen Pro</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-settings" class="btn-icon" title="Configuración">⚙️</button>
+                <button id="btn-help" class="btn-icon" title="Ayuda">❓</button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="create">
+                <span class="tab-icon">✨</span>
+                <span class="tab-label">Crear</span>
+            </button>
+            <button class="tab-btn" data-tab="gallery">
+                <span class="tab-icon">🎞️</span>
+                <span class="tab-label">Galería</span>
+            </button>
+            <button class="tab-btn" data-tab="templates">
+                <span class="tab-icon">🎨</span>
+                <span class="tab-label">Plantillas</span>
+            </button>
+        </nav>
+
+        <!-- Tab: Create -->
+        <main id="tab-create" class="tab-content active">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <span>Guion</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <span>Voz</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <span>Visual</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <span>Exportar</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Script -->
+            <section id="step-1" class="step-panel active">
+                <div class="panel-header">
+                    <h2>📝 Escribe tu guion</h2>
+                    <p class="panel-desc">El texto se convertirá en voz y subtítulos automáticamente</p>
+                </div>
+
+                <div class="input-group">
+                    <label for="video-title">Título del Short</label>
+                    <input type="text" id="video-title" placeholder="Ej: 5 Trucos de Cocina que Nadie Conoce" maxlength="100">
+                </div>
+
+                <div class="input-group">
+                    <label for="video-script">Guion / Texto del video</label>
+                    <textarea id="video-script" placeholder="Escribe aquí lo que dirá el narrador...&#10;&#10;Ejemplo:&#10;¿Sabías que puedes pelar un ajo en solo 10 segundos?&#10;Solo necesitas un frasco de vidrio.&#10;Mete los dientes de ajo dentro...&#10;¡Y agítalo vigorosamente!&#10;Mira qué fácil queda la piel.&#10;Sígueme para más trucos." maxlength="1500"></textarea>
+                    <div class="char-counter"><span id="script-chars">0</span> / 1500 caracteres</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Duración del Short</label>
+                    <div class="duration-selector">
+                        <button class="duration-btn active" data-duration="15">15s</button>
+                        <button class="duration-btn" data-duration="30">30s</button>
+                        <button class="duration-btn" data-duration="45">45s</button>
+                        <button class="duration-btn" data-duration="60">60s</button>
+                    </div>
+                    <p class="hint">💡 YouTube Shorts permite hasta 60 segundos</p>
+                </div>
+
+                <div class="input-group">
+                    <label>Categoría / Nicho</label>
+                    <div class="category-grid">
+                        <button class="category-btn active" data-category="general">📌 General</button>
+                        <button class="category-btn" data-category="cocina">🍳 Cocina</button>
+                        <button class="category-btn" data-category="fitness">💪 Fitness</button>
+                        <button class="category-btn" data-category="tecnologia">💻 Tecnología</button>
+                        <button class="category-btn" data-category="motivacion">🔥 Motivación</button>
+                        <button class="category-btn" data-category="educacion">📚 Educación</button>
+                        <button class="category-btn" data-category="entretenimiento">🎭 Entretenimiento</button>
+                        <button class="category-btn" data-category="finanzas">💰 Finanzas</button>
+                    </div>
+                </div>
+
+                <button id="btn-next-1" class="btn-primary btn-large">
+                    <span>Continuar</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </section>
+
+            <!-- Step 2: Voice -->
+            <section id="step-2" class="step-panel">
+                <div class="panel-header">
+                    <h2>🎙️ Configura la voz</h2>
+                    <p class="panel-desc">Elige el tipo de voz que narrará tu Short</p>
+                </div>
+
+                <div class="voice-section">
+                    <label>Tipo de voz</label>
+                    <div class="voice-type-selector">
+                        <button class="voice-type-btn active" data-gender="female">
+                            <span class="voice-avatar">👩</span>
+                            <span class="voice-label">Femenina</span>
+                        </button>
+                        <button class="voice-type-btn" data-gender="male">
+                            <span class="voice-avatar">👨</span>
+                            <span class="voice-label">Masculina</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="voice-section">
+                    <label>Voz específica</label>
+                    <div class="voice-options" id="female-voices">
+                        <div class="voice-card active" data-voice="es-ES-ElviraNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Elvira</span>
+                                <span class="voice-desc">Español de España - Clara y profesional</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="elvira">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-MX-DaliaNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Dalia</span>
+                                <span class="voice-desc">Español de México - Cálida y amigable</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="dalia">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-AR-ElenaNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Elena</span>
+                                <span class="voice-desc">Español de Argentina - Energética</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="elena">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-CO-SalomeNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Salomé</span>
+                                <span class="voice-desc">Español de Colombia - Suave</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="salome">▶️</button>
+                        </div>
+                    </div>
+                    <div class="voice-options hidden" id="male-voices">
+                        <div class="voice-card active" data-voice="es-ES-AlvaroNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Álvaro</span>
+                                <span class="voice-desc">Español de España - Profunda y autoritaria</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="alvaro">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-MX-JorgeNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Jorge</span>
+                                <span class="voice-desc">Español de México - Natural y cercana</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="jorge">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-AR-TomasNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Tomás</span>
+                                <span class="voice-desc">Español de Argentina - Jovial</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="tomas">▶️</button>
+                        </div>
+                        <div class="voice-card" data-voice="es-US-AlonsoNeural">
+                            <div class="voice-wave">🔊</div>
+                            <div class="voice-info">
+                                <span class="voice-name">Alonso</span>
+                                <span class="voice-desc">Español de EE.UU. - Moderno</span>
+                            </div>
+                            <button class="btn-play-sample" data-sample="alonso">▶️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="voice-section">
+                    <label>Velocidad de lectura</label>
+                    <div class="speed-slider-container">
+                        <span class="speed-label">Lenta</span>
+                        <input type="range" id="voice-speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                        <span class="speed-label">Rápida</span>
+                    </div>
+                    <div class="speed-value">Velocidad: <span id="speed-display">1.0x</span></div>
+                </div>
+
+                <div class="voice-section">
+                    <label>Preview de voz</label>
+                    <button id="btn-preview-voice" class="btn-secondary btn-full">
+                        <span>🎧 Escuchar preview con tu guion</span>
+                    </button>
+                    <div id="voice-preview-status" class="preview-status hidden"></div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-back-2" class="btn-outline">
+                        <span class="btn-arrow">←</span>
+                        <span>Atrás</span>
+                    </button>
+                    <button id="btn-next-2" class="btn-primary">
+                        <span>Continuar</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 3: Visual -->
+            <section id="step-3" class="step-panel">
+                <div class="panel-header">
+                    <h2>🎨 Diseño visual</h2>
+                    <p class="panel-desc">Personaliza la apariencia de tu Short</p>
+                </div>
+
+                <!-- Background Type -->
+                <div class="visual-section">
+                    <label>Tipo de fondo</label>
+                    <div class="bg-type-selector">
+                        <button class="bg-type-btn active" data-bg="gradient">
+                            <span>🌈</span>
+                            <span>Gradiente</span>
+                        </button>
+                        <button class="bg-type-btn" data-bg="solid">
+                            <span>🎨</span>
+                            <span>Color sólido</span>
+                        </button>
+                        <button class="bg-type-btn" data-bg="particles">
+                            <span>✨</span>
+                            <span>Partículas</span>
+                        </button>
+                        <button class="bg-type-btn" data-bg="image">
+                            <span>🖼️</span>
+                            <span>Imagen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gradient Presets -->
+                <div class="visual-section" id="gradient-section">
+                    <label>Gradientes en tendencia</label>
+                    <div class="gradient-grid">
+                        <div class="gradient-card active" data-gradient="sunset" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #ff9ff3);">
+                            <span class="gradient-name">Sunset</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="ocean" style="background: linear-gradient(135deg, #00d2ff, #3a7bd5, #00d2ff);">
+                            <span class="gradient-name">Ocean</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="neon" style="background: linear-gradient(135deg, #b721ff, #21d4fd, #b721ff);">
+                            <span class="gradient-name">Neon</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="forest" style="background: linear-gradient(135deg, #11998e, #38ef7d, #11998e);">
+                            <span class="gradient-name">Forest</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="fire" style="background: linear-gradient(135deg, #f12711, #f5af19, #f12711);">
+                            <span class="gradient-name">Fire</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="midnight" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);">
+                            <span class="gradient-name">Midnight</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="candy" style="background: linear-gradient(135deg, #ff9a9e, #fecfef, #ff9a9e);">
+                            <span class="gradient-name">Candy</span>
+                        </div>
+                        <div class="gradient-card" data-gradient="cyber" style="background: linear-gradient(135deg, #ff00cc, #333399, #ff00cc);">
+                            <span class="gradient-name">Cyber</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="visual-section">
+                    <label>Filtros en tendencia</label>
+                    <div class="filter-grid">
+                        <div class="filter-card active" data-filter="none">
+                            <div class="filter-preview" style="background: #444;"></div>
+                            <span>Sin filtro</span>
+                        </div>
+                        <div class="filter-card" data-filter="vintage">
+                            <div class="filter-preview" style="background: #c4a35a; filter: sepia(0.6) contrast(1.2);"></div>
+                            <span>Vintage</span>
+                        </div>
+                        <div class="filter-card" data-filter="cinematic">
+                            <div class="filter-preview" style="background: #4a5568; filter: contrast(1.3) saturate(1.2) brightness(0.9);"></div>
+                            <span>Cinematic</span>
+                        </div>
+                        <div class="filter-card" data-filter="neon-glow">
+                            <div class="filter-preview" style="background: #ff00ff; filter: saturate(2) brightness(1.2) hue-rotate(15deg);"></div>
+                            <span>Neon Glow</span>
+                        </div>
+                        <div class="filter-card" data-filter="dramatic">
+                            <div class="filter-preview" style="background: #1a1a2e; filter: contrast(1.5) brightness(0.8);"></div>
+                            <span>Dramatic</span>
+                        </div>
+                        <div class="filter-card" data-filter="warm">
+                            <div class="filter-preview" style="background: #e8a87c; filter: sepia(0.3) saturate(1.5) brightness(1.1);"></div>
+                            <span>Warm</span>
+                        </div>
+                        <div class="filter-card" data-filter="cool">
+                            <div class="filter-preview" style="background: #87ceeb; filter: hue-rotate(180deg) saturate(1.3);"></div>
+                            <span>Cool</span>
+                        </div>
+                        <div class="filter-card" data-filter="blackwhite">
+                            <div class="filter-preview" style="background: #888; filter: grayscale(1) contrast(1.2);"></div>
+                            <span>B&W</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subtitle Style -->
+                <div class="visual-section">
+                    <label>Estilo de subtítulos</label>
+                    <div class="subtitle-style-grid">
+                        <div class="subtitle-style-card active" data-substyle="tiktok">
+                            <div class="subtitle-preview" style="font-family: 'Montserrat', sans-serif; font-weight: 900; text-transform: uppercase; -webkit-text-stroke: 2px #000; color: #fff;">
+                                TikTok Style
+                            </div>
+                            <span>TikTok Bold</span>
+                        </div>
+                        <div class="subtitle-style-card" data-substyle="minimal">
+                            <div class="subtitle-preview" style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #fff; background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 8px;">
+                                Minimal Clean
+                            </div>
+                            <span>Minimal</span>
+                        </div>
+                        <div class="subtitle-style-card" data-substyle="neon">
+                            <div class="subtitle-preview" style="font-family: 'Bebas Neue', sans-serif; color: #0ff; text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;">
+                                NEON GLOW
+                            </div>
+                            <span>Neon</span>
+                        </div>
+                        <div class="subtitle-style-card" data-substyle="retro">
+                            <div class="subtitle-preview" style="font-family: 'Courier New', monospace; color: #0f0; background: #000; padding: 4px;">
+                                &gt; RETRO_TERM
+                            </div>
+                            <span>Retro</span>
+                        </div>
+                        <div class="subtitle-style-card" data-substyle="elegant">
+                            <div class="subtitle-preview" style="font-family: 'Georgia', serif; font-style: italic; color: #f5f5dc; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                                Elegant Script
+                            </div>
+                            <span>Elegant</span>
+                        </div>
+                        <div class="subtitle-style-card" data-substyle="impact">
+                            <div class="subtitle-preview" style="font-family: 'Impact', sans-serif; color: #ff0; -webkit-text-stroke: 1px #f00; text-shadow: 3px 3px 0 #f00;">
+                                IMPACT!
+                            </div>
+                            <span>Impact</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subtitle Animation -->
+                <div class="visual-section">
+                    <label>Animación de subtítulos</label>
+                    <div class="anim-selector">
+                        <button class="anim-btn active" data-anim="typewriter">
+                            <span class="anim-demo">⌨️</span>
+                            <span>Máquina de escribir</span>
+                        </button>
+                        <button class="anim-btn" data-anim="bounce">
+                            <span class="anim-demo">⬆️</span>
+                            <span>Rebote</span>
+                        </button>
+                        <button class="anim-btn" data-anim="fade">
+                            <span class="anim-demo">👻</span>
+                            <span>Desvanecer</span>
+                        </button>
+                        <button class="anim-btn" data-anim="slide">
+                            <span class="anim-demo">➡️</span>
+                            <span>Deslizar</span>
+                        </button>
+                        <button class="anim-btn" data-anim="zoom">
+                            <span class="anim-demo">🔍</span>
+                            <span>Zoom</span>
+                        </button>
+                        <button class="anim-btn" data-anim="glitch">
+                            <span class="anim-demo">👾</span>
+                            <span>Glitch</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Canvas -->
+                <div class="visual-section">
+                    <label>Vista previa del diseño</label>
+                    <div class="preview-container">
+                        <canvas id="preview-canvas" width="360" height="640"></canvas>
+                        <div class="preview-overlay">
+                            <button id="btn-refresh-preview" class="btn-icon-small">🔄</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-back-3" class="btn-outline">
+                        <span class="btn-arrow">←</span>
+                        <span>Atrás</span>
+                    </button>
+                    <button id="btn-next-3" class="btn-primary">
+                        <span>Generar Video</span>
+                        <span class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 4: Export -->
+            <section id="step-4" class="step-panel">
+                <div class="panel-header">
+                    <h2>📤 Exportar Short</h2>
+                    <p class="panel-desc">Tu video está listo para descargar</p>
+                </div>
+
+                <!-- Progress -->
+                <div id="generation-progress" class="progress-section">
+                    <div class="progress-ring">
+                        <svg viewBox="0 0 120 120">
+                            <circle class="progress-bg" cx="60" cy="60" r="54"/>
+                            <circle class="progress-fill" cx="60" cy="60" r="54" id="progress-circle"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span id="progress-percent">0%</span>
+                            <span id="progress-label">Generando...</span>
+                        </div>
+                    </div>
+                    <div class="progress-steps">
+                        <div class="progress-step active" id="step-generate-audio">
+                            <span class="step-icon">🎙️</span>
+                            <span>Generando audio</span>
+                        </div>
+                        <div class="progress-step" id="step-render-frames">
+                            <span class="step-icon">🎨</span>
+                            <span>Renderizando frames</span>
+                        </div>
+                        <div class="progress-step" id="step-encode-video">
+                            <span class="step-icon">🎬</span>
+                            <span>Codificando video</span>
+                        </div>
+                        <div class="progress-step" id="step-finalize">
+                            <span class="step-icon">✅</span>
+                            <span>Finalizando</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div id="export-result" class="result-section hidden">
+                    <div class="result-video-container">
+                        <video id="result-video" controls poster="" playsinline></video>
+                        <div class="video-info">
+                            <div class="info-item">
+                                <span class="info-label">Resolución:</span>
+                                <span class="info-value">720 x 1280 (9:16)</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Duración:</span>
+                                <span class="info-value" id="result-duration">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Formato:</span>
+                                <span class="info-value">MP4 (H.264)</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Tamaño:</span>
+                                <span class="info-value" id="result-size">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="export-actions">
+                        <button id="btn-download" class="btn-primary btn-large">
+                            <span>⬇️</span>
+                            <span>Descargar Video</span>
+                        </button>
+
+                        <div class="link-section">
+                            <label>O copia el enlace de descarga:</label>
+                            <div class="link-input-group">
+                                <input type="text" id="download-link" readonly value="">
+                                <button id="btn-copy-link" class="btn-secondary">
+                                    <span>📋 Copiar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="share-section">
+                            <p>Compartir en:</p>
+                            <div class="share-buttons">
+                                <button class="share-btn youtube" title="YouTube">📺</button>
+                                <button class="share-btn tiktok" title="TikTok">🎵</button>
+                                <button class="share-btn instagram" title="Instagram">📸</button>
+                                <button class="share-btn whatsapp" title="WhatsApp">💬</button>
+                            </div>
+                        </div>
+
+                        <button id="btn-create-new" class="btn-outline btn-full">
+                            <span>✨ Crear otro Short</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="btn-row" id="export-back-row">
+                    <button id="btn-back-4" class="btn-outline">
+                        <span class="btn-arrow">←</span>
+                        <span>Atrás</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Tab: Gallery -->
+        <main id="tab-gallery" class="tab-content">
+            <div class="gallery-header">
+                <h2>🎞️ Mis Shorts</h2>
+                <p>Todos tus videos generados</p>
+            </div>
+            <div id="gallery-grid" class="gallery-grid">
+                <div class="empty-gallery">
+                    <span class="empty-icon">🎬</span>
+                    <p>Aún no has creado ningún Short</p>
+                    <button class="btn-primary" onclick="switchTab('create')">Crear mi primer Short</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Tab: Templates -->
+        <main id="tab-templates" class="tab-content">
+            <div class="templates-header">
+                <h2>🎨 Plantillas</h2>
+                <p>Comienza rápido con diseños profesionales</p>
+            </div>
+            <div class="templates-grid">
+                <div class="template-card" data-template="motivational">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #ff6b6b, #feca57);">
+                        <span class="template-icon">🔥</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Motivacional</h3>
+                        <p>Frases inspiradoras con fondo dinámico</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+                <div class="template-card" data-template="facts">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #00d2ff, #3a7bd5);">
+                        <span class="template-icon">🧠</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Datos Curiosos</h3>
+                        <p>Presenta información de forma atractiva</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+                <div class="template-card" data-template="recipe">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                        <span class="template-icon">🍳</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Receta Rápida</h3>
+                        <p>Pasos de cocina con instrucciones claras</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+                <div class="template-card" data-template="tutorial">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #b721ff, #21d4fd);">
+                        <span class="template-icon">💡</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Tutorial</h3>
+                        <p>Explica paso a paso cualquier tema</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+                <div class="template-card" data-template="story">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #f12711, #f5af19);">
+                        <span class="template-icon">📖</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Historia Corta</h3>
+                        <p>Narra historias cautivadoras</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+                <div class="template-card" data-template="quote">
+                    <div class="template-preview" style="background: linear-gradient(135deg, #0f0c29, #302b63);">
+                        <span class="template-icon">💬</span>
+                    </div>
+                    <div class="template-info">
+                        <h3>Cita del Día</h3>
+                        <p>Citas famosas con diseño elegante</p>
+                        <button class="btn-use-template">Usar plantilla</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="modal-settings" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Configuración</h3>
+                <button class="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label>Calidad de exportación</label>
+                    <select id="setting-quality">
+                        <option value="720">720p (Recomendado para Shorts)</option>
+                        <option value="1080">1080p (Alta calidad)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>FPS (fotogramas por segundo)</label>
+                    <select id="setting-fps">
+                        <option value="24">24 FPS (Cinematográfico)</option>
+                        <option value="30" selected>30 FPS (Estándar)</option>
+                        <option value="60">60 FPS (Fluido)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>Tamaño de fuente de subtítulos</label>
+                    <input type="range" id="setting-fontsize" min="16" max="48" value="28">
+                    <span id="fontsize-value">28px</span>
+                </div>
+                <div class="setting-item">
+                    <label>Guardar automáticamente en galería</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="setting-autosave" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>Idioma de la interfaz</label>
+                    <select id="setting-language">
+                        <option value="es" selected>Español</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="modal-help" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>❓ Ayuda</h3>
+                <button class="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h4>🎯 Cómo crear un Short</h4>
+                    <ol>
+                        <li><strong>Escribe tu guion</strong> - El texto que el narrador dirá</li>
+                        <li><strong>Elige la voz</strong> - Femenina o masculina, con acento español</li>
+                        <li><strong>Diseña el visual</strong> - Gradientes, filtros y estilo de subtítulos</li>
+                        <li><strong>Exporta</strong> - Descarga en formato MP4 listo para YouTube</li>
+                    </ol>
+                </div>
+                <div class="help-section">
+                    <h4>📐 Especificaciones del video</h4>
+                    <ul>
+                        <li>Formato: <strong>Vertical 9:16</strong></li>
+                        <li>Resolución: <strong>720 x 1280 píxeles</strong></li>
+                        <li>Duración máxima: <strong>60 segundos</strong></li>
+                        <li>Formato: <strong>MP4 (H.264)</strong></li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h4>💡 Consejos para Shorts virales</h4>
+                    <ul>
+                        <li>Hook en los primeros 3 segundos</li>
+                        <li>Subtítulos grandes y legibles</li>
+                        <li>Cambios visuales cada 2-4 segundos</li>
+                        <li>Música de fondo acorde al contenido</li>
+                        <li>CTA (llamada a la acción) al final</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
