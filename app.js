@@ -1,6 +1,6 @@
 /* ============================================
-   SHORTSGEN PRO v3.0 - Cuba/VPN Edition
-   Puter.js para imágenes AI (sin API key)
+   SHORTSGEN PRO v3.1 - Cuba/VPN Edition
+   Pollinations.ai para imágenes AI (GRATIS)
    Web Speech API para voz (gratis)
    ============================================ */
 
@@ -42,6 +42,10 @@ const SUBTITLE_STYLES = {
     minimal: { fontFamily: '"Poppins", sans-serif', fontWeight: '600', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 26 },
     neon: { fontFamily: '"Bebas Neue", sans-serif', fontWeight: '400', color: '#0ff', textShadow: '0 0 10px #0ff, 0 0 20px #0ff', fontSize: 32 }
 };
+
+// Cache de imágenes para no regenerar
+const imageCache = new Map();
+let aiImageFailed = false;
 
 // ==========================================
 // INICIALIZACIÓN
@@ -98,7 +102,6 @@ function selectVoice(voiceId) {
     document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
     document.querySelector(`[data-voice="${voiceId}"]`)?.classList.add('active');
 
-    // Probar la voz inmediatamente
     const testText = voiceId === 'browser-female' ? 'Hola, soy la voz femenina.' : 'Hola, soy la voz masculina.';
     speakText(testText, true);
 }
@@ -114,7 +117,6 @@ function speakText(text, isPreview = false) {
         return;
     }
 
-    // Cancelar cualquier reproducción anterior
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -123,16 +125,11 @@ function speakText(text, isPreview = false) {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Obtener voces
     const voices = window.speechSynthesis.getVoices();
     const spanishVoices = voices.filter(v => v.lang && (v.lang.startsWith('es') || v.lang.startsWith('es-')));
 
-    console.log('Voces españolas disponibles:', spanishVoices.map(v => v.name));
-
     if (spanishVoices.length > 0) {
         const isFemale = AppState.selectedVoice === 'browser-female';
-
-        // Buscar voz por género usando palabras clave en el nombre
         let selectedVoice = null;
 
         for (const voice of spanishVoices) {
@@ -154,13 +151,8 @@ function speakText(text, isPreview = false) {
             }
         }
 
-        // Si no encontramos específica, usar la primera española
         if (!selectedVoice) selectedVoice = spanishVoices[0];
-
         utterance.voice = selectedVoice;
-        console.log('✅ Voz seleccionada:', selectedVoice.name, '| Género esperado:', isFemale ? 'Femenino' : 'Masculino');
-    } else {
-        console.warn('⚠️ No se encontraron voces en español. Usando voz por defecto.');
     }
 
     if (isPreview) {
@@ -185,20 +177,22 @@ async function startGeneration() {
     resultEl.classList.add('hidden');
 
     try {
-        // PASO 1: Generar imagen AI con Puter.js (si se seleccionó)
-        if (AppState.bgType === 'image') {
-            updateProgress(5, '🎨 Generando imagen con IA...');
-            await generatePuterImage();
-            updateProgress(20, '✅ Imagen generada');
+        // PASO 1: Generar imagen AI con Pollinations (GRATIS) o fallback a gradiente
+        if (AppState.bgType === 'image' && !aiImageFailed) {
+            updateProgress(5, '🎨 Generando imagen con IA (gratis)...');
+            const success = await generatePollinationsImage();
+            if (success) {
+                updateProgress(20, '✅ Imagen generada');
+            } else {
+                updateProgress(20, '⚠️ Usando gradiente (IA no disponible)');
+            }
+        } else {
+            updateProgress(20, '🎨 Usando fondo ' + AppState.bgType);
         }
 
         // PASO 2: Generar audio con Web Speech API
         updateProgress(30, '🎙️ Generando audio...');
-
-        // Para Web Speech API, no podemos grabar el audio directamente
-        // Así que calculamos la duración estimada
         const estimatedDuration = Math.max(AppState.duration, estimateSpeechDuration(AppState.videoScript));
-
         updateProgress(40, '✅ Audio estimado: ' + Math.round(estimatedDuration) + 's');
 
         // PASO 3: Renderizar video frame por frame
@@ -216,65 +210,75 @@ async function startGeneration() {
 }
 
 function estimateSpeechDuration(text) {
-    // Promedio: ~15 caracteres por segundo en español
     const charCount = text.replace(/\s+/g, '').length;
     return Math.max(5, Math.ceil(charCount / 15));
 }
 
 // ==========================================
-// GENERAR IMAGEN CON PUTER.JS (Nano Banana)
+// GENERAR IMAGEN CON POLLINATIONS.AI (GRATIS)
 // ==========================================
-async function generatePuterImage() {
-    return new Promise(async (resolve, reject) => {
-        try {
-            // Verificar que Puter.js esté cargado
-            if (typeof puter === 'undefined') {
-                // Cargar Puter.js dinámicamente
-                await loadScript('https://js.puter.com/v2/');
-            }
-
-            showToast('🎨 Conectando con IA...', 'info');
-
-            const prompt = `${AppState.videoTitle}. ${AppState.videoScript.substring(0, 200)}. High quality, cinematic lighting, vertical format 9:16, professional photography`;
-
-            console.log('Generando imagen con prompt:', prompt);
-
-            // Usar Puter.js para generar imagen con Nano Banana
-            const img = await puter.ai.txt2img(prompt, {
-                model: 'gemini-2.5-flash-image-preview', // Nano Banana
-                width: 720,
-                height: 1280
-            });
-
-            // Convertir a URL usable
-            const canvas = document.createElement('canvas');
-            canvas.width = 720;
-            canvas.height = 1280;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 720, 1280);
-
-            AppState.aiImageUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-            showToast('✅ Imagen generada con Nano Banana', 'success');
-            resolve();
-
-        } catch (error) {
-            console.error('Error Puter.js:', error);
-            showToast('⚠️ Error con imágenes AI, usando gradiente', 'warning');
-            AppState.bgType = 'gradient'; // Fallback a gradiente
-            resolve(); // Continuar sin imagen
+async function generatePollinationsImage() {
+    try {
+        const cacheKey = AppState.videoTitle + '_' + AppState.videoScript.substring(0, 50);
+        
+        // Verificar cache
+        if (imageCache.has(cacheKey)) {
+            AppState.aiImageUrl = imageCache.get(cacheKey);
+            showToast('♻️ Imagen recuperada del cache', 'info');
+            return true;
         }
-    });
-}
 
-function loadScript(src) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
+        showToast('🎨 Generando imagen gratuita...', 'info');
+
+        // Prompt optimizado para Pollinations.ai
+        const prompt = encodeURIComponent(
+            `${AppState.videoTitle}. ${AppState.videoScript.substring(0, 200)}. ` +
+            `High quality, cinematic lighting, vertical format 9:16, professional photography, vibrant colors`
+        );
+
+        // Pollinations.ai es GRATIS y no requiere API key
+        const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=720&height=1280&nologo=true&seed=${Date.now()}&enhance=true`;
+
+        // Precargar imagen para verificar que carga
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = imageUrl;
+            // Timeout de 15 segundos
+            setTimeout(() => reject(new Error('Timeout')), 15000);
+        });
+
+        // Convertir a data URL para uso offline
+        const canvas = document.createElement('canvas');
+        canvas.width = 720;
+        canvas.height = 1280;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 720, 1280);
+        
+        AppState.aiImageUrl = canvas.toDataURL('image/jpeg', 0.85);
+        
+        // Guardar en cache
+        imageCache.set(cacheKey, AppState.aiImageUrl);
+        
+        // Limitar cache a 10 imágenes
+        if (imageCache.size > 10) {
+            const firstKey = imageCache.keys().next().value;
+            imageCache.delete(firstKey);
+        }
+
+        showToast('✅ Imagen generada (gratis)', 'success');
+        return true;
+
+    } catch (error) {
+        console.error('Error generando imagen:', error);
+        aiImageFailed = true;
+        AppState.bgType = 'gradient';
+        showToast('⚠️ Error con imágenes AI, usando gradiente', 'warning');
+        return false;
+    }
 }
 
 // ==========================================
@@ -400,20 +404,17 @@ function drawSubtitle(ctx, w, h, text, progress) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Sombra
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 10;
     ctx.shadowOffsetX = 3;
     ctx.shadowOffsetY = 3;
 
-    // Animación typewriter
     let displayText = text;
     if (AppState.subtitleAnim === 'typewriter') {
         const charCount = Math.max(1, Math.floor(progress * text.length));
         displayText = text.substring(0, charCount);
     }
 
-    // Wrap text
     const maxWidth = w - 60;
     const words = displayText.split(' ');
     const lines = [];
@@ -430,7 +431,6 @@ function drawSubtitle(ctx, w, h, text, progress) {
     }
     if (currentLine) lines.push(currentLine);
 
-    // Dibujar líneas
     const lineHeight = fontSize * 1.5;
     const startY = h - 250 - (lines.length * lineHeight) / 2;
 
@@ -446,6 +446,8 @@ function drawSubtitle(ctx, w, h, text, progress) {
 // MOSTRAR RESULTADO Y DESCARGA
 // ==========================================
 function showResult(videoBlob, duration) {
+    AppState.videoBlob = videoBlob;
+    
     document.getElementById('generation-progress').classList.add('hidden');
     document.getElementById('export-result').classList.remove('hidden');
     document.getElementById('export-back-row').classList.remove('hidden');
@@ -458,7 +460,6 @@ function showResult(videoBlob, duration) {
     const sizeMB = (videoBlob.size / (1024 * 1024)).toFixed(2);
     document.getElementById('result-size').textContent = sizeMB + ' MB';
 
-    // Crear link de descarga
     const downloadLink = document.getElementById('download-link');
     if (downloadLink) {
         downloadLink.value = url;
@@ -548,7 +549,6 @@ function updateProgress(percent, label) {
 // EVENT LISTENERS
 // ==========================================
 function setupEventListeners() {
-    // Navegación
     document.getElementById('btn-next-1')?.addEventListener('click', () => goToStep(2));
     document.getElementById('btn-back-2')?.addEventListener('click', () => goToStep(1));
     document.getElementById('btn-next-2')?.addEventListener('click', () => goToStep(3));
@@ -556,7 +556,6 @@ function setupEventListeners() {
     document.getElementById('btn-next-3')?.addEventListener('click', () => goToStep(4));
     document.getElementById('btn-back-error')?.addEventListener('click', () => goToStep(3));
 
-    // Inputs
     document.getElementById('video-script')?.addEventListener('input', (e) => {
         const chars = document.getElementById('script-chars');
         if (chars) chars.textContent = e.target.value.length;
@@ -567,7 +566,6 @@ function setupEventListeners() {
         AppState.videoTitle = e.target.value;
     });
 
-    // Duración
     document.querySelectorAll('.duration-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
@@ -576,24 +574,25 @@ function setupEventListeners() {
         });
     });
 
-    // Velocidad
     document.getElementById('voice-speed')?.addEventListener('input', (e) => {
         AppState.voiceSpeed = parseFloat(e.target.value);
         const display = document.getElementById('speed-display');
         if (display) display.textContent = e.target.value + 'x';
     });
 
-    // Fondo
     document.querySelectorAll('.bg-type-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             AppState.bgType = btn.dataset.bg;
+            // Resetear flag de error si cambian a gradiente
+            if (btn.dataset.bg !== 'image') {
+                aiImageFailed = false;
+            }
             renderPreview();
         });
     });
 
-    // Gradientes
     document.querySelectorAll('.gradient-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.gradient-card').forEach(c => c.classList.remove('active'));
@@ -603,7 +602,6 @@ function setupEventListeners() {
         });
     });
 
-    // Estilos subtítulos
     document.querySelectorAll('.subtitle-style-card').forEach(card => {
         card.addEventListener('click', () => {
             document.querySelectorAll('.subtitle-style-card').forEach(c => c.classList.remove('active'));
@@ -613,15 +611,11 @@ function setupEventListeners() {
         });
     });
 
-    // Preview
     document.getElementById('btn-refresh-preview')?.addEventListener('click', renderPreview);
-
-    // Exportar
     document.getElementById('btn-download')?.addEventListener('click', downloadVideo);
     document.getElementById('btn-copy-link')?.addEventListener('click', copyDownloadLink);
     document.getElementById('btn-create-new')?.addEventListener('click', resetApp);
 
-    // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
@@ -665,6 +659,7 @@ function resetApp() {
     AppState.audioBlob = null;
     AppState.videoBlob = null;
     AppState.aiImageUrl = null;
+    aiImageFailed = false;
 
     const title = document.getElementById('video-title');
     const script = document.getElementById('video-script');
@@ -781,3 +776,6 @@ window.goToStep = goToStep;
 window.downloadVideo = downloadVideo;
 window.copyDownloadLink = copyDownloadLink;
 window.resetApp = resetApp;
+window.showHelp = function() {
+    showToast('🎬 ShortsGen Pro v3.1 - Usa Pollinations.ai (gratis) para imágenes', 'info');
+};
