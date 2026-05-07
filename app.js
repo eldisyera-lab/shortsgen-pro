@@ -43,7 +43,7 @@ const AppState = {
     videoBlob: null,
     generatedVideos: [],
     isGenerating: false,
-    apiKey: localStorage.getItem('elevenlabs_api_key') || '',
+    apiKey: localStorage.getItem('elevenlabs_api_key') || 'sk_7c773243a3a0bebad44f8e5af7a617c09a6d3e0c519ecf59',
     settings: {
         quality: '720',
         fps: 24,  // Reducido para mejor rendimiento en móvil
@@ -207,30 +207,54 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
-    // Splash screen
-    setTimeout(() => {
-        document.getElementById('splash-screen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('app').classList.add('fade-in');
-    }, 2500);
+    try {
+        // Splash screen
+        setTimeout(() => {
+            try {
+                const splash = document.getElementById('splash-screen');
+                const app = document.getElementById('app');
+                if (splash) splash.classList.add('hidden');
+                if (app) {
+                    app.classList.remove('hidden');
+                    app.classList.add('fade-in');
+                }
+            } catch (e) {
+                console.error('Error mostrando app:', e);
+            }
+        }, 800);
 
-    // Cargar datos guardados
-    loadSavedData();
+        // Cargar datos guardados
+        loadSavedData();
 
-    // Renderizar voces de ElevenLabs
-    renderElevenLabsVoices();
+        // Renderizar voces de ElevenLabs
+        renderElevenLabsVoices();
 
-    // Renderizar plantillas
-    renderTemplates();
+        // Renderizar plantillas
+        renderTemplates();
 
-    // Event listeners
-    setupEventListeners();
+        // Event listeners
+        setupEventListeners();
 
-    // PWA
-    setupPWA();
+        // PWA (opcional, no crítico)
+        try {
+            setupPWA();
+        } catch (e) {
+            console.warn('PWA no disponible:', e);
+        }
 
-    // Renderizar preview inicial
-    setTimeout(() => renderPreview(), 100);
+        // Renderizar preview inicial
+        setTimeout(() => {
+            try {
+                renderPreview();
+            } catch (e) {
+                console.warn('Preview inicial no disponible:', e);
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('ERROR CRÍTICO EN initApp:', error);
+        alert('Error al iniciar ShortsGen Pro: ' + error.message);
+    }
 }
 
 function loadSavedData() {
@@ -849,7 +873,7 @@ async function renderFrames(duration) {
     const frames = [];
 
     // Dividir texto en segmentos por líneas
-    const lines = AppState.videoScript.split(/\n+/).filter(s => s.trim());
+    const lines = AppState.videoScript.split(/\n+/).map(s => s.trim()).filter(s => s.length > 0);
     const totalDuration = duration;
     const segmentDuration = totalDuration / Math.max(lines.length, 1);
 
@@ -1266,8 +1290,8 @@ function loadTemplate(templateKey) {
     if (!template) return;
 
     document.getElementById('video-title').value = template.title;
-    document.getElementById('video-script').value = template.script.replace(/\n/g, '
-');
+    document.getElementById('video-script').value = template.script;
+
     document.getElementById('script-chars').textContent = template.script.length;
 
     document.querySelectorAll('.duration-btn').forEach(btn => {
@@ -1401,7 +1425,7 @@ function closeAllModals() {
 // ==========================================
 function setupPWA() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(console.error);
+        navigator.serviceWorker.register('sw.js').catch(err => { console.warn('SW no disponible (opcional):', err.message); });
     }
 
     let deferredPrompt;
