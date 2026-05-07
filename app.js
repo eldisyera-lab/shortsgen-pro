@@ -1,23 +1,29 @@
 /* ============================================
-   SHORTSGEN PRO v2.3 - Versión Estable
-   Funciona: Voz navegador, subtítulos, video, imágenes AI
+   SHORTSGEN PRO v3.0 - Cuba/VPN Edition
+   Puter.js para imágenes AI (sin API key)
+   Web Speech API para voz (gratis)
    ============================================ */
 
 // ==========================================
-// CONFIGURACIÓN
+// ESTADO GLOBAL
 // ==========================================
-const ELEVENLABS_CONFIG = {
-    baseUrl: 'https://api.elevenlabs.io/v1',
-    voices: [
-        { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', gender: 'female' },
-        { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', gender: 'female' },
-        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', gender: 'female' },
-        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', gender: 'female' },
-        { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', gender: 'male' },
-        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', gender: 'female' },
-        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh', gender: 'male' },
-        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', gender: 'male' }
-    ]
+const AppState = {
+    currentStep: 1,
+    videoTitle: '',
+    videoScript: '',
+    duration: 15,
+    category: 'general',
+    selectedVoice: 'browser-female',
+    voiceSpeed: 1.0,
+    bgType: 'gradient',
+    selectedGradient: 'sunset',
+    selectedFilter: 'none',
+    subtitleStyle: 'tiktok',
+    subtitleAnim: 'typewriter',
+    audioBlob: null,
+    videoBlob: null,
+    aiImageUrl: null,
+    settings: { quality: '720', fps: 24, fontSize: 28 }
 };
 
 const GRADIENTS = {
@@ -32,33 +38,9 @@ const GRADIENTS = {
 };
 
 const SUBTITLE_STYLES = {
-    tiktok: { fontFamily: '"Montserrat", sans-serif', fontWeight: '900', color: '#ffffff', textShadow: '3px 3px 0 #000', fontSize: 28 },
+    tiktok: { fontFamily: '"Montserrat", sans-serif', fontWeight: '900', color: '#ffffff', textShadow: '3px 3px 0 #000000', fontSize: 28 },
     minimal: { fontFamily: '"Poppins", sans-serif', fontWeight: '600', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 26 },
-    neon: { fontFamily: '"Bebas Neue", sans-serif', fontWeight: '400', color: '#0ff', textShadow: '0 0 10px #0ff', fontSize: 32 }
-};
-
-// ==========================================
-// ESTADO GLOBAL
-// ==========================================
-const AppState = {
-    currentStep: 1,
-    videoTitle: '',
-    videoScript: '',
-    duration: 15,
-    category: 'general',
-    selectedVoice: ELEVENLABS_CONFIG.voices[0].id,
-    voiceSpeed: 1.0,
-    bgType: 'gradient',
-    selectedGradient: 'sunset',
-    selectedFilter: 'none',
-    subtitleStyle: 'tiktok',
-    subtitleAnim: 'typewriter',
-    audioBlob: null,
-    videoBlob: null,
-    apiKey: localStorage.getItem('elevenlabs_api_key') || '',
-    useBrowserVoice: false,
-    aiBackgroundImage: null,
-    settings: { quality: '720', fps: 24, fontSize: 28 }
+    neon: { fontFamily: '"Bebas Neue", sans-serif', fontWeight: '400', color: '#0ff', textShadow: '0 0 10px #0ff, 0 0 20px #0ff', fontSize: 32 }
 };
 
 // ==========================================
@@ -66,28 +48,20 @@ const AppState = {
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        document.getElementById('splash-screen').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
+        const splash = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+        if (splash) splash.classList.add('hidden');
+        if (app) app.classList.remove('hidden');
     }, 800);
 
-    loadSavedData();
     renderVoices();
     renderTemplates();
     setupEventListeners();
-    setupPWA();
-    setTimeout(() => renderPreview(), 100);
+    renderPreview();
 });
 
-function loadSavedData() {
-    const savedKey = localStorage.getItem('elevenlabs_api_key');
-    if (savedKey) {
-        AppState.apiKey = savedKey;
-        document.getElementById('elevenlabs-api-key').value = savedKey;
-    }
-}
-
 // ==========================================
-// RENDERIZAR VOCES
+// VOCES
 // ==========================================
 function renderVoices() {
     const container = document.getElementById('voice-options');
@@ -95,310 +69,238 @@ function renderVoices() {
 
     container.innerHTML = `
         <div style="margin-bottom:1rem;">
-            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.5rem;">Voces ElevenLabs (Requiere API Key)</label>
-            ${ELEVENLABS_CONFIG.voices.map(v => createVoiceCard(v)).join('')}
-        </div>
-        <div style="margin-top:1rem;padding:1rem;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:12px;">
-            <label style="font-size:0.85rem;color:#ffc107;display:block;margin-bottom:0.5rem;">⚠️ Voz del Navegador (Gratis - Sin API Key)</label>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.5rem;">🎙️ Voces del Navegador (Gratis - Funciona en Cuba)</label>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                <div class="voice-card" data-voice="browser-female" onclick="selectBrowserVoice('female')" style="flex:1;min-width:120px;">
+                <div class="voice-card active" data-voice="browser-female" onclick="selectVoice('browser-female')" style="flex:1;min-width:120px;cursor:pointer;">
                     <div class="voice-wave">👩</div>
                     <div class="voice-info">
-                        <span class="voice-name">Voz Femenina</span>
-                        <span class="voice-desc">Gratis · Chrome/Edge</span>
+                        <span class="voice-name">Mujer</span>
+                        <span class="voice-desc">Español · Gratis</span>
                     </div>
                 </div>
-                <div class="voice-card" data-voice="browser-male" onclick="selectBrowserVoice('male')" style="flex:1;min-width:120px;">
+                <div class="voice-card" data-voice="browser-male" onclick="selectVoice('browser-male')" style="flex:1;min-width:120px;cursor:pointer;">
                     <div class="voice-wave">👨</div>
                     <div class="voice-info">
-                        <span class="voice-name">Voz Masculina</span>
-                        <span class="voice-desc">Gratis · Chrome/Edge</span>
+                        <span class="voice-name">Hombre</span>
+                        <span class="voice-desc">Español · Gratis</span>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-
-    // Seleccionar primera por defecto
-    const firstCard = container.querySelector('.voice-card');
-    if (firstCard) firstCard.classList.add('active');
-}
-
-function createVoiceCard(voice) {
-    return `
-        <div class="voice-card" data-voice="${voice.id}" onclick="selectVoice('${voice.id}')">
-            <div class="voice-wave">${voice.gender === 'female' ? '👩' : '👨'}</div>
-            <div class="voice-info">
-                <span class="voice-name">${voice.name}</span>
-                <span class="voice-desc">${voice.gender === 'female' ? 'Femenina' : 'Masculina'} · ElevenLabs</span>
-            </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">
+                Usa las voces de tu sistema. Chrome/Edge tienen las mejores voces en español.
+            </p>
         </div>
     `;
 }
 
 function selectVoice(voiceId) {
     AppState.selectedVoice = voiceId;
-    AppState.useBrowserVoice = false;
     document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
     document.querySelector(`[data-voice="${voiceId}"]`)?.classList.add('active');
-}
 
-function selectBrowserVoice(gender) {
-    AppState.selectedVoice = gender === 'female' ? 'browser-female' : 'browser-male';
-    AppState.useBrowserVoice = true;
-    document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
-    document.querySelector(`[data-voice="browser-${gender}"]`)?.classList.add('active');
-    showToast('✅ Voz del navegador seleccionada', 'success');
+    // Probar la voz inmediatamente
+    const testText = voiceId === 'browser-female' ? 'Hola, soy la voz femenina.' : 'Hola, soy la voz masculina.';
+    speakText(testText, true);
 }
 
 window.selectVoice = selectVoice;
-window.selectBrowserVoice = selectBrowserVoice;
 
 // ==========================================
-// GENERAR AUDIO
+// SÍNTESIS DE VOZ (Web Speech API)
 // ==========================================
-async function generateAudio(text) {
-    if (AppState.useBrowserVoice || !AppState.apiKey) {
-        return await generateBrowserTTS(text);
-    }
-    return await generateElevenLabsAudio(text, AppState.selectedVoice);
-}
-
-async function generateElevenLabsAudio(text, voiceId) {
-    const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-            'xi-api-key': AppState.apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'audio/mpeg'
-        },
-        body: JSON.stringify({
-            text: text.replace(/\n/g, ' ').trim(),
-            model_id: 'eleven_multilingual_v2',
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-        })
-    });
-
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`ElevenLabs ${response.status}: ${error}`);
+function speakText(text, isPreview = false) {
+    if (!('speechSynthesis' in window)) {
+        showToast('❌ Tu navegador no soporta voz', 'error');
+        return;
     }
 
-    return await response.blob();
-}
+    // Cancelar cualquier reproducción anterior
+    window.speechSynthesis.cancel();
 
-async function generateBrowserTTS(text) {
-    return new Promise((resolve, reject) => {
-        if (!('speechSynthesis' in window)) {
-            reject(new Error('Navegador no soporta voz'));
-            return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-ES';
+    utterance.rate = AppState.voiceSpeed || 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Obtener voces
+    const voices = window.speechSynthesis.getVoices();
+    const spanishVoices = voices.filter(v => v.lang && (v.lang.startsWith('es') || v.lang.startsWith('es-')));
+
+    console.log('Voces españolas disponibles:', spanishVoices.map(v => v.name));
+
+    if (spanishVoices.length > 0) {
+        const isFemale = AppState.selectedVoice === 'browser-female';
+
+        // Buscar voz por género usando palabras clave en el nombre
+        let selectedVoice = null;
+
+        for (const voice of spanishVoices) {
+            const name = voice.name.toLowerCase();
+            if (isFemale) {
+                if (name.includes('female') || name.includes('mujer') || name.includes('español') || 
+                    name.includes('laura') || name.includes('helena') || name.includes('monica') ||
+                    name.includes('sofia') || name.includes('isabela') || name.includes('camila')) {
+                    selectedVoice = voice;
+                    break;
+                }
+            } else {
+                if (name.includes('male') || name.includes('hombre') || name.includes('español') ||
+                    name.includes('pablo') || name.includes('jorge') || name.includes('diego') ||
+                    name.includes('carlos') || name.includes('juan') || name.includes('mateo')) {
+                    selectedVoice = voice;
+                    break;
+                }
+            }
         }
 
-        // Detener cualquier reproducción anterior
-        window.speechSynthesis.cancel();
+        // Si no encontramos específica, usar la primera española
+        if (!selectedVoice) selectedVoice = spanishVoices[0];
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'es-ES';
-        utterance.rate = AppState.voiceSpeed;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+        utterance.voice = selectedVoice;
+        console.log('✅ Voz seleccionada:', selectedVoice.name, '| Género esperado:', isFemale ? 'Femenino' : 'Masculino');
+    } else {
+        console.warn('⚠️ No se encontraron voces en español. Usando voz por defecto.');
+    }
 
-        // Esperar a que las voces estén disponibles
-        let voices = window.speechSynthesis.getVoices();
+    if (isPreview) {
+        utterance.onstart = () => showToast('🔊 Reproduciendo voz...', 'info');
+        utterance.onend = () => showToast('✅ Voz lista', 'success');
+    }
 
-        const selectVoice = () => {
-            voices = window.speechSynthesis.getVoices();
-            const spanishVoices = voices.filter(v => v.lang && v.lang.startsWith('es'));
-
-            if (spanishVoices.length > 0) {
-                // Seleccionar por género
-                const isFemale = AppState.selectedVoice === 'browser-female';
-                const targetGender = isFemale ? 'female' : 'male';
-
-                // Buscar voz que coincida con género
-                let selected = spanishVoices.find(v => {
-                    const name = v.name.toLowerCase();
-                    if (isFemale) {
-                        return name.includes('female') || name.includes('mujer') || name.includes('laura') || name.includes('helena') || name.includes('monica');
-                    } else {
-                        return name.includes('male') || name.includes('hombre') || name.includes('pablo') || name.includes('jorge') || name.includes('carlos');
-                    }
-                });
-
-                // Si no encontramos específica, usar primera española
-                if (!selected) selected = spanishVoices[0];
-
-                utterance.voice = selected;
-                console.log('Voz seleccionada:', selected.name, 'Género esperado:', targetGender);
-            }
-        };
-
-        if (voices.length === 0) {
-            window.speechSynthesis.onvoiceschanged = () => {
-                selectVoice();
-                window.speechSynthesis.speak(utterance);
-            };
-        } else {
-            selectVoice();
-        }
-
-        // Crear audio usando MediaRecorder
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const destination = audioContext.createMediaStreamDestination();
-        const mediaRecorder = new MediaRecorder(destination.stream);
-        const chunks = [];
-
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(chunks, { type: 'audio/webm' });
-            resolve(blob);
-        };
-
-        // Conectar audio del sistema al MediaRecorder
-        // Nota: En Chrome no podemos capturar directamente TTS, así que usamos un workaround
-
-        utterance.onstart = () => {
-            console.log('TTS iniciado');
-            mediaRecorder.start();
-        };
-
-        utterance.onend = () => {
-            console.log('TTS completado');
-            setTimeout(() => {
-                mediaRecorder.stop();
-                audioContext.close();
-            }, 500);
-        };
-
-        utterance.onerror = (e) => {
-            console.error('Error TTS:', e);
-            mediaRecorder.stop();
-            reject(new Error('Error en voz del navegador'));
-        };
-
-        // Iniciar
-        if (voices.length > 0) {
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // Timeout de seguridad
-        setTimeout(() => {
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-            }
-            if (mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        }, 120000);
-    });
+    window.speechSynthesis.speak(utterance);
+    return utterance;
 }
 
 // ==========================================
-// GENERAR IMÁGENES AI
-// ==========================================
-async function generateAIImage(prompt) {
-    const encodedPrompt = encodeURIComponent(prompt);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=720&height=1280&nologo=true&model=flux`;
-
-    showToast('🎨 Generando imagen...', 'info');
-
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Error generando imagen');
-
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
-}
-
-// ==========================================
-// GENERAR VIDEO
+// GENERAR VIDEO COMPLETO
 // ==========================================
 async function startGeneration() {
     if (!validateInputs()) return;
 
-    document.getElementById('generation-progress').classList.remove('hidden');
-    document.getElementById('export-result').classList.add('hidden');
+    const progressEl = document.getElementById('generation-progress');
+    const resultEl = document.getElementById('export-result');
+
+    progressEl.classList.remove('hidden');
+    resultEl.classList.add('hidden');
 
     try {
-        // Paso 1: Audio
-        updateProgress(10, 'Generando audio...');
-        const audioBlob = await generateAudio(AppState.videoScript);
-        AppState.audioBlob = audioBlob;
-
-        // Obtener duración real del audio
-        const audioDuration = await getAudioDuration(audioBlob);
-        const duration = Math.min(audioDuration, AppState.duration);
-
-        updateProgress(30, 'Audio generado ✓');
-
-        // Paso 2: Generar imagen AI si es necesario
+        // PASO 1: Generar imagen AI con Puter.js (si se seleccionó)
         if (AppState.bgType === 'image') {
-            updateProgress(35, 'Generando imagen AI...');
-            const prompt = `${AppState.videoTitle}. ${AppState.videoScript.substring(0, 100)}. High quality, cinematic, vertical format 9:16`;
-            AppState.aiBackgroundImage = await generateAIImage(prompt);
-            updateProgress(45, 'Imagen generada ✓');
+            updateProgress(5, '🎨 Generando imagen con IA...');
+            await generatePuterImage();
+            updateProgress(20, '✅ Imagen generada');
         }
 
-        // Paso 3: Renderizar frames
-        updateProgress(50, 'Renderizando video...');
-        const videoBlob = await renderVideo(duration);
-        AppState.videoBlob = videoBlob;
+        // PASO 2: Generar audio con Web Speech API
+        updateProgress(30, '🎙️ Generando audio...');
 
-        // Paso 4: Finalizar
-        updateProgress(100, '¡Completado!');
-        showResult(videoBlob, duration);
+        // Para Web Speech API, no podemos grabar el audio directamente
+        // Así que calculamos la duración estimada
+        const estimatedDuration = Math.max(AppState.duration, estimateSpeechDuration(AppState.videoScript));
+
+        updateProgress(40, '✅ Audio estimado: ' + Math.round(estimatedDuration) + 's');
+
+        // PASO 3: Renderizar video frame por frame
+        updateProgress(50, '🎬 Renderizando video...');
+        const videoBlob = await renderVideoFrames(estimatedDuration);
+
+        updateProgress(100, '✅ ¡Video completado!');
+        showResult(videoBlob, estimatedDuration);
 
     } catch (error) {
-        console.error('Error:', error);
-        showToast('❌ ' + error.message, 'error');
+        console.error('Error generando video:', error);
+        showToast('❌ Error: ' + error.message, 'error');
         document.getElementById('export-back-row').classList.remove('hidden');
     }
 }
 
-function updateProgress(percent, label) {
-    document.getElementById('progress-percent').textContent = percent + '%';
-    document.getElementById('progress-label').textContent = label;
-    const circle = document.getElementById('progress-circle');
-    if (circle) {
-        const circumference = 2 * Math.PI * 54;
-        circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
-    }
+function estimateSpeechDuration(text) {
+    // Promedio: ~15 caracteres por segundo en español
+    const charCount = text.replace(/\s+/g, '').length;
+    return Math.max(5, Math.ceil(charCount / 15));
 }
 
-function getAudioDuration(blob) {
-    return new Promise((resolve) => {
-        const audio = new Audio(URL.createObjectURL(blob));
-        audio.onloadedmetadata = () => {
-            URL.revokeObjectURL(audio.src);
-            resolve(audio.duration || AppState.duration);
-        };
-        audio.onerror = () => resolve(AppState.duration);
+// ==========================================
+// GENERAR IMAGEN CON PUTER.JS (Nano Banana)
+// ==========================================
+async function generatePuterImage() {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Verificar que Puter.js esté cargado
+            if (typeof puter === 'undefined') {
+                // Cargar Puter.js dinámicamente
+                await loadScript('https://js.puter.com/v2/');
+            }
+
+            showToast('🎨 Conectando con IA...', 'info');
+
+            const prompt = `${AppState.videoTitle}. ${AppState.videoScript.substring(0, 200)}. High quality, cinematic lighting, vertical format 9:16, professional photography`;
+
+            console.log('Generando imagen con prompt:', prompt);
+
+            // Usar Puter.js para generar imagen con Nano Banana
+            const img = await puter.ai.txt2img(prompt, {
+                model: 'gemini-2.5-flash-image-preview', // Nano Banana
+                width: 720,
+                height: 1280
+            });
+
+            // Convertir a URL usable
+            const canvas = document.createElement('canvas');
+            canvas.width = 720;
+            canvas.height = 1280;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 720, 1280);
+
+            AppState.aiImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+
+            showToast('✅ Imagen generada con Nano Banana', 'success');
+            resolve();
+
+        } catch (error) {
+            console.error('Error Puter.js:', error);
+            showToast('⚠️ Error con imágenes AI, usando gradiente', 'warning');
+            AppState.bgType = 'gradient'; // Fallback a gradiente
+            resolve(); // Continuar sin imagen
+        }
+    });
+}
+
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
     });
 }
 
 // ==========================================
-// RENDERIZAR VIDEO CON CANVAS
+// RENDERIZAR VIDEO FRAME POR FRAME
 // ==========================================
-async function renderVideo(duration) {
+async function renderVideoFrames(duration) {
     const canvas = document.createElement('canvas');
-    const quality = AppState.settings.quality;
-    canvas.width = quality === '1080' ? 1080 : 720;
-    canvas.height = quality === '1080' ? 1920 : 1280;
+    const w = 720;
+    const h = 1280;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
-    const fps = AppState.settings.fps;
-    const totalFrames = Math.ceil(fps * duration);
+
+    const fps = 24;
+    const totalFrames = Math.ceil(duration * fps);
+    const frameDuration = 1000 / fps;
 
     // Precargar imagen de fondo si existe
     let bgImage = null;
-    if (AppState.aiBackgroundImage) {
+    if (AppState.aiImageUrl) {
         bgImage = new Image();
-        bgImage.src = AppState.aiBackgroundImage;
-        await new Promise((resolve) => { bgImage.onload = resolve; bgImage.onerror = resolve; });
+        bgImage.src = AppState.aiImageUrl;
+        await new Promise(resolve => { bgImage.onload = resolve; bgImage.onerror = resolve; });
     }
 
-    // Dividir texto en líneas
+    // Dividir texto en segmentos
     const lines = AppState.videoScript.split(/\n+/).map(s => s.trim()).filter(s => s.length > 0);
     const segmentDuration = duration / Math.max(lines.length, 1);
 
@@ -406,7 +308,7 @@ async function renderVideo(duration) {
     const stream = canvas.captureStream(fps);
     const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000
+        videoBitsPerSecond: 8000000
     });
 
     const chunks = [];
@@ -419,14 +321,13 @@ async function renderVideo(duration) {
             const blob = new Blob(chunks, { type: 'video/webm' });
             resolve(blob);
         };
-        mediaRecorder.onerror = (e) => reject(e);
+        mediaRecorder.onerror = reject;
 
         mediaRecorder.start(100);
 
         let frameIndex = 0;
-        const frameDuration = 1000 / fps;
 
-        function drawFrame() {
+        function drawNextFrame() {
             if (frameIndex >= totalFrames) {
                 mediaRecorder.stop();
                 return;
@@ -435,26 +336,26 @@ async function renderVideo(duration) {
             const time = frameIndex / fps;
             const progress = time / duration;
 
-            // 1. Dibujar fondo
-            drawBackground(ctx, canvas.width, canvas.height, time, bgImage);
+            // 1. Fondo
+            drawBackground(ctx, w, h, bgImage);
 
             // 2. Determinar texto actual
             const lineIndex = Math.min(Math.floor(time / segmentDuration), lines.length - 1);
             const currentLine = lines[lineIndex] || '';
             const segmentProgress = (time % segmentDuration) / segmentDuration;
 
-            // 3. Dibujar subtítulos
+            // 3. Subtítulos
             if (currentLine) {
-                drawSubtitle(ctx, canvas.width, canvas.height, currentLine, segmentProgress, time);
+                drawSubtitle(ctx, w, h, currentLine, segmentProgress);
             }
 
             // 4. Barra de progreso
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.fillRect(0, canvas.height - 8, canvas.width * progress, 8);
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.fillRect(20, h - 20, (w - 40) * progress, 6);
 
             // 5. Info
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(20, 20, 100, 30);
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(20, 20, 120, 30);
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 12px Poppins';
             ctx.textAlign = 'left';
@@ -462,38 +363,35 @@ async function renderVideo(duration) {
 
             frameIndex++;
 
-            if (frameIndex % 5 === 0) {
+            // Actualizar progreso cada 10 frames
+            if (frameIndex % 10 === 0) {
                 const p = 50 + (frameIndex / totalFrames) * 50;
-                updateProgress(Math.floor(p), 'Renderizando video...');
+                updateProgress(Math.floor(p), `Renderizando... ${Math.floor(p)}%`);
             }
 
-            setTimeout(drawFrame, frameDuration);
+            setTimeout(drawNextFrame, frameDuration);
         }
 
-        drawFrame();
+        drawNextFrame();
     });
 }
 
-function drawBackground(ctx, w, h, time, bgImage) {
-    if (AppState.bgType === 'image' && bgImage && bgImage.complete) {
-        // Dibujar imagen AI
+function drawBackground(ctx, w, h, bgImage) {
+    if (AppState.bgType === 'image' && bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
         const scale = Math.max(w / bgImage.width, h / bgImage.height);
         const x = (w - bgImage.width * scale) / 2;
         const y = (h - bgImage.height * scale) / 2;
         ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
-    } else if (AppState.bgType === 'gradient') {
-        const colors = GRADIENTS[AppState.selectedGradient];
+    } else {
+        const colors = GRADIENTS[AppState.selectedGradient] || GRADIENTS.sunset;
         const grad = ctx.createLinearGradient(0, 0, w, h);
         colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
-    } else {
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, w, h);
     }
 }
 
-function drawSubtitle(ctx, w, h, text, progress, time) {
+function drawSubtitle(ctx, w, h, text, progress) {
     const style = SUBTITLE_STYLES[AppState.subtitleStyle] || SUBTITLE_STYLES.tiktok;
     const fontSize = AppState.settings.fontSize || style.fontSize;
 
@@ -503,10 +401,10 @@ function drawSubtitle(ctx, w, h, text, progress, time) {
     ctx.textBaseline = 'middle';
 
     // Sombra
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
 
     // Animación typewriter
     let displayText = text;
@@ -516,7 +414,7 @@ function drawSubtitle(ctx, w, h, text, progress, time) {
     }
 
     // Wrap text
-    const maxWidth = w - 80;
+    const maxWidth = w - 60;
     const words = displayText.split(' ');
     const lines = [];
     let currentLine = '';
@@ -533,8 +431,8 @@ function drawSubtitle(ctx, w, h, text, progress, time) {
     if (currentLine) lines.push(currentLine);
 
     // Dibujar líneas
-    const lineHeight = fontSize * 1.4;
-    const startY = h - 200 - (lines.length * lineHeight) / 2;
+    const lineHeight = fontSize * 1.5;
+    const startY = h - 250 - (lines.length * lineHeight) / 2;
 
     ctx.fillStyle = style.color;
     lines.forEach((line, i) => {
@@ -545,7 +443,7 @@ function drawSubtitle(ctx, w, h, text, progress, time) {
 }
 
 // ==========================================
-// MOSTRAR RESULTADO
+// MOSTRAR RESULTADO Y DESCARGA
 // ==========================================
 function showResult(videoBlob, duration) {
     document.getElementById('generation-progress').classList.add('hidden');
@@ -560,32 +458,57 @@ function showResult(videoBlob, duration) {
     const sizeMB = (videoBlob.size / (1024 * 1024)).toFixed(2);
     document.getElementById('result-size').textContent = sizeMB + ' MB';
 
-    showToast('🎉 ¡Short generado exitosamente!', 'success');
+    // Crear link de descarga
+    const downloadLink = document.getElementById('download-link');
+    if (downloadLink) {
+        downloadLink.value = url;
+    }
+
+    showToast('🎉 ¡Short generado! Reproduce y descarga', 'success');
 }
 
 function downloadVideo() {
-    if (!AppState.videoBlob) return;
+    if (!AppState.videoBlob) {
+        showToast('❌ No hay video para descargar', 'error');
+        return;
+    }
+
     const url = URL.createObjectURL(AppState.videoBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Short_${AppState.videoTitle.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.webm`;
+    a.download = `Short_${AppState.videoTitle.replace(/[^a-z0-9áéíóúñü]/gi, '_').substring(0, 30)}_${Date.now()}.webm`;
+    document.body.appendChild(a);
     a.click();
-    showToast('⬇️ Descargando...', 'success');
+    document.body.removeChild(a);
+
+    showToast('⬇️ Descarga iniciada', 'success');
+}
+
+function copyDownloadLink() {
+    const linkInput = document.getElementById('download-link');
+    if (linkInput) {
+        linkInput.select();
+        navigator.clipboard.writeText(linkInput.value).then(() => {
+            showToast('📋 Link copiado', 'success');
+        }).catch(() => {
+            showToast('❌ No se pudo copiar', 'error');
+        });
+    }
 }
 
 // ==========================================
 // VALIDACIÓN Y NAVEGACIÓN
 // ==========================================
 function validateInputs() {
-    const title = document.getElementById('video-title').value.trim();
-    const script = document.getElementById('video-script').value.trim();
+    const title = document.getElementById('video-title')?.value.trim();
+    const script = document.getElementById('video-script')?.value.trim();
 
     if (!title) {
         showToast('⚠️ Escribe un título', 'warning');
         return false;
     }
-    if (!script || script.length < 10) {
-        showToast('⚠️ Escribe un guion de al menos 10 caracteres', 'warning');
+    if (!script || script.length < 5) {
+        showToast('⚠️ Escribe un guion de al menos 5 caracteres', 'warning');
         return false;
     }
 
@@ -596,10 +519,6 @@ function validateInputs() {
 
 function goToStep(step) {
     if (step === 2 && !validateInputs()) return;
-    if (step === 3) {
-        const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
-        if (apiKey) AppState.apiKey = apiKey;
-    }
     if (step === 4) {
         if (!validateInputs()) return;
         startGeneration();
@@ -610,6 +529,19 @@ function goToStep(step) {
     document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === step));
     document.querySelectorAll('.step-panel').forEach(panel => panel.classList.remove('active'));
     document.getElementById(`step-${step}`)?.classList.add('active');
+}
+
+function updateProgress(percent, label) {
+    const percentEl = document.getElementById('progress-percent');
+    const labelEl = document.getElementById('progress-label');
+    const circle = document.getElementById('progress-circle');
+
+    if (percentEl) percentEl.textContent = percent + '%';
+    if (labelEl) labelEl.textContent = label;
+    if (circle) {
+        const circumference = 2 * Math.PI * 54;
+        circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
+    }
 }
 
 // ==========================================
@@ -626,7 +558,8 @@ function setupEventListeners() {
 
     // Inputs
     document.getElementById('video-script')?.addEventListener('input', (e) => {
-        document.getElementById('script-chars').textContent = e.target.value.length;
+        const chars = document.getElementById('script-chars');
+        if (chars) chars.textContent = e.target.value.length;
         AppState.videoScript = e.target.value;
     });
 
@@ -643,18 +576,11 @@ function setupEventListeners() {
         });
     });
 
-    // API Key
-    document.getElementById('elevenlabs-api-key')?.addEventListener('input', (e) => {
-        AppState.apiKey = e.target.value.trim();
-        localStorage.setItem('elevenlabs_api_key', AppState.apiKey);
-    });
-
-    document.getElementById('btn-test-api')?.addEventListener('click', testAPI);
-
     // Velocidad
     document.getElementById('voice-speed')?.addEventListener('input', (e) => {
         AppState.voiceSpeed = parseFloat(e.target.value);
-        document.getElementById('speed-display').textContent = e.target.value + 'x';
+        const display = document.getElementById('speed-display');
+        if (display) display.textContent = e.target.value + 'x';
     });
 
     // Fondo
@@ -677,16 +603,6 @@ function setupEventListeners() {
         });
     });
 
-    // Filtros
-    document.querySelectorAll('.filter-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.filter-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.selectedFilter = card.dataset.filter;
-            renderPreview();
-        });
-    });
-
     // Estilos subtítulos
     document.querySelectorAll('.subtitle-style-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -697,60 +613,18 @@ function setupEventListeners() {
         });
     });
 
-    // Animación
-    document.querySelectorAll('.anim-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.subtitleAnim = btn.dataset.anim;
-            renderPreview();
-        });
-    });
-
     // Preview
     document.getElementById('btn-refresh-preview')?.addEventListener('click', renderPreview);
 
     // Exportar
     document.getElementById('btn-download')?.addEventListener('click', downloadVideo);
+    document.getElementById('btn-copy-link')?.addEventListener('click', copyDownloadLink);
     document.getElementById('btn-create-new')?.addEventListener('click', resetApp);
 
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
-}
-
-async function testAPI() {
-    const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
-    const statusEl = document.getElementById('api-status');
-
-    if (!apiKey) {
-        showToast('⚠️ Introduce una API Key', 'warning');
-        return;
-    }
-
-    statusEl.classList.remove('hidden');
-    statusEl.textContent = '🔄 Probando...';
-
-    try {
-        const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/voices`, {
-            headers: { 'xi-api-key': apiKey }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            AppState.apiKey = apiKey;
-            localStorage.setItem('elevenlabs_api_key', apiKey);
-            statusEl.innerHTML = '✅ Conectado. ' + (data.voices?.length || 0) + ' voces';
-            showToast('✅ API Key válida', 'success');
-        } else {
-            statusEl.innerHTML = '❌ API Key inválida';
-            showToast('❌ API Key inválida', 'error');
-        }
-    } catch (e) {
-        statusEl.innerHTML = '❌ Error de conexión';
-        showToast('❌ No se pudo conectar', 'error');
-    }
 }
 
 function switchTab(tabName) {
@@ -770,7 +644,7 @@ function renderPreview() {
     const h = canvas.height;
 
     ctx.clearRect(0, 0, w, h);
-    drawBackground(ctx, w, h, 0, null);
+    drawBackground(ctx, w, h, null);
 
     const style = SUBTITLE_STYLES[AppState.subtitleStyle] || SUBTITLE_STYLES.tiktok;
     ctx.save();
@@ -790,15 +664,20 @@ function resetApp() {
     AppState.videoScript = '';
     AppState.audioBlob = null;
     AppState.videoBlob = null;
+    AppState.aiImageUrl = null;
 
-    document.getElementById('video-title').value = '';
-    document.getElementById('video-script').value = '';
-    document.getElementById('script-chars').textContent = '0';
+    const title = document.getElementById('video-title');
+    const script = document.getElementById('video-script');
+    if (title) title.value = '';
+    if (script) script.value = '';
+
+    const chars = document.getElementById('script-chars');
+    if (chars) chars.textContent = '0';
 
     goToStep(1);
-    document.getElementById('generation-progress').classList.remove('hidden');
-    document.getElementById('export-result').classList.add('hidden');
-    document.getElementById('export-back-row').classList.add('hidden');
+    document.getElementById('generation-progress')?.classList.remove('hidden');
+    document.getElementById('export-result')?.classList.add('hidden');
+    document.getElementById('export-back-row')?.classList.add('hidden');
     updateProgress(0, 'Generando...');
 }
 
@@ -808,17 +687,21 @@ function resetApp() {
 const TEMPLATES = {
     motivational: {
         title: 'Frase Motivacional del Día',
-        script: 'El éxito no es definitivo. El fracaso no es fatal. Lo que cuenta es el valor para continuar.\n\nCada día es una nueva oportunidad para ser mejor que ayer.',
+        script: 'El éxito no es definitivo. El fracaso no es fatal. Lo que cuenta es el valor para continuar. Cada día es una nueva oportunidad.',
         duration: 15,
-        voice: 'XB0fDUnXU5powFXDhCwa',
         gradient: 'fire'
     },
     facts: {
         title: 'Dato Curioso',
-        script: '¿Sabías que los pulpos tienen tres corazones?\n\nDos bombean sangre a las branquias y uno al resto del cuerpo.',
+        script: '¿Sabías que los pulpos tienen tres corazones? Dos bombean sangre a las branquias y uno al resto del cuerpo.',
         duration: 15,
-        voice: 'AZnzlk1XvdvUeBnXmlld',
         gradient: 'ocean'
+    },
+    recipe: {
+        title: 'Receta Express',
+        script: 'Hoy te enseño a hacer los tacos más jugosos. Calienta la tortilla, agrega carne sazonada, cebolla, cilantro y limón.',
+        duration: 15,
+        gradient: 'sunset'
     }
 };
 
@@ -829,7 +712,7 @@ function renderTemplates() {
     grid.innerHTML = Object.keys(TEMPLATES).map(key => {
         const t = TEMPLATES[key];
         return `
-            <div class="template-card" onclick="loadTemplate('${key}')">
+            <div class="template-card" onclick="loadTemplate('${key}')" style="cursor:pointer;">
                 <div class="template-preview" style="background: linear-gradient(135deg, ${GRADIENTS[t.gradient][0]}, ${GRADIENTS[t.gradient][1]});">
                     <span style="font-size:2rem;">🎬</span>
                 </div>
@@ -846,9 +729,14 @@ function loadTemplate(key) {
     const t = TEMPLATES[key];
     if (!t) return;
 
-    document.getElementById('video-title').value = t.title;
-    document.getElementById('video-script').value = t.script;
-    document.getElementById('script-chars').textContent = t.script.length;
+    const title = document.getElementById('video-title');
+    const script = document.getElementById('video-script');
+    if (title) title.value = t.title;
+    if (script) script.value = t.script;
+
+    const chars = document.getElementById('script-chars');
+    if (chars) chars.textContent = t.script.length;
+
     AppState.videoTitle = t.title;
     AppState.videoScript = t.script;
     AppState.duration = t.duration;
@@ -869,29 +757,27 @@ function showToast(message, type = 'info') {
     if (!container) return;
 
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
     toast.style.cssText = `
         background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#17a2b8'};
         color: ${type === 'warning' ? '#000' : '#fff'};
         padding: 12px 20px;
         border-radius: 8px;
         margin-bottom: 10px;
-        animation: slideIn 0.3s ease;
         font-size: 0.9rem;
+        animation: slideIn 0.3s ease;
+        z-index: 10000;
     `;
+    toast.textContent = message;
     container.appendChild(toast);
+
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
 
-// ==========================================
-// PWA
-// ==========================================
-function setupPWA() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-}
+// Exponer funciones necesarias
+window.goToStep = goToStep;
+window.downloadVideo = downloadVideo;
+window.copyDownloadLink = copyDownloadLink;
+window.resetApp = resetApp;
