@@ -1,111 +1,40 @@
 /* ============================================
-   SHORTSGEN PRO - YouTube Shorts Generator v2.0
-   Correcciones: ElevenLabs, Video sync, Opera/Móvil
+   SHORTSGEN PRO v2.3 - Versión Estable
+   Funciona: Voz navegador, subtítulos, video, imágenes AI
    ============================================ */
 
 // ==========================================
-// CONFIGURACIÓN ELEVENLABS
+// CONFIGURACIÓN
 // ==========================================
-// ==========================================
-// CONFIGURACIÓN DE IMÁGENES AI (Pollinations - Gratis, sin API Key)
-// ==========================================
-const POLLINATIONS_CONFIG = {
-    baseUrl: 'https://image.pollinations.ai/prompt',
-    // Modelos disponibles: flux, turbo, pixart, delib3, etc.
-    defaultModel: 'flux',
-    // Parámetros de calidad
-    width: 720,
-    height: 1280,
-    seed: null, // null = random cada vez
-    nologo: true,
-    negativePrompt: 'blurry, low quality, distorted, ugly, deformed'
-};
-
-
-// ==========================================
-// GENERACIÓN DE IMÁGENES CON AI (Pollinations - Gratis)
-// ==========================================
-
-function generateImagePrompt(title, script, category) {
-    // Crear un prompt optimizado basado en el contenido del Short
-    const cleanScript = script.replace(/\n/g, ' ').substring(0, 200);
-
-    const prompts = {
-        motivacion: `Cinematic motivational scene: ${title}. ${cleanScript}. Dramatic lighting, inspiring atmosphere, high quality, 4k, professional photography style, vibrant colors, text space at bottom`,
-        educacion: `Educational infographic style: ${title}. ${cleanScript}. Clean design, colorful diagrams, white background, modern illustration, high quality, clear text, academic style`,
-        cocina: `Delicious food photography: ${title}. ${cleanScript}. Appetizing presentation, warm lighting, professional food styling, kitchen background, high quality, 4k, vibrant colors`,
-        entretenimiento: `Entertainment scene: ${title}. ${cleanScript}. Dynamic composition, engaging visuals, colorful, high energy, professional photography, cinematic style`,
-        tecnologia: `Futuristic tech visualization: ${title}. ${cleanScript}. Neon accents, dark background, holographic elements, modern tech aesthetic, high quality, 4k`,
-        general: `Professional visual content: ${title}. ${cleanScript}. High quality, engaging composition, vibrant colors, modern style, 4k resolution, cinematic lighting`
-    };
-
-    return prompts[category] || prompts.general;
-}
-
-async function generateAIImage(prompt, model = 'flux') {
-    try {
-        showToast('🎨 Generando imagen con IA...', 'info');
-
-        // Codificar el prompt para URL
-        const encodedPrompt = encodeURIComponent(prompt);
-
-        // Construir URL de Pollinations AI (100% gratis, sin API key)
-        const imageUrl = `${POLLINATIONS_CONFIG.baseUrl}/${encodedPrompt}?` +
-            `width=${POLLINATIONS_CONFIG.width}&` +
-            `height=${POLLINATIONS_CONFIG.height}&` +
-            `nologo=${POLLINATIONS_CONFIG.nologo}&` +
-            `model=${model}&` +
-            `negative_prompt=${encodeURIComponent(POLLINATIONS_CONFIG.negativePrompt)}` +
-            (POLLINATIONS_CONFIG.seed ? `&seed=${POLLINATIONS_CONFIG.seed}` : '');
-
-        console.log('Generando imagen Pollinations:', imageUrl.substring(0, 100) + '...');
-
-        // Cargar la imagen como blob
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-            throw new Error(`Error generando imagen: ${response.status}`);
-        }
-
-        const blob = await response.blob();
-        const objectUrl = URL.createObjectURL(blob);
-
-        showToast('✅ Imagen generada exitosamente', 'success');
-        return { blob, objectUrl, url: imageUrl };
-
-    } catch (error) {
-        console.error('Error generando imagen AI:', error);
-        showToast('❌ Error generando imagen: ' + error.message, 'error');
-        return null;
-    }
-}
-
-// Precargar imagen de fondo para el video
-async function generateBackgroundImage() {
-    const prompt = generateImagePrompt(AppState.videoTitle, AppState.videoScript, AppState.category);
-    const result = await generateAIImage(prompt, 'flux');
-
-    if (result) {
-        AppState.aiBackgroundImage = result.objectUrl;
-        return result.objectUrl;
-    }
-    return null;
-}
-
-
 const ELEVENLABS_CONFIG = {
     baseUrl: 'https://api.elevenlabs.io/v1',
-    // Voces predefinidas - IDs verificados de ElevenLabs que funcionan en español
-    // NOTA: El usuario DEBE tener una API Key válida. La versión gratuita incluye 10,000 chars/mes.
     voices: [
-        { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', gender: 'female', accent: 'Multilingüe', desc: 'Voz clara y profesional. Ideal para narraciones.' },
-        { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', gender: 'female', accent: 'Multilingüe', desc: 'Voz cálida y amigable. Perfecta para tutoriales.' },
-        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', gender: 'female', accent: 'Multilingüe', desc: 'Voz enérgica y juvenil. Buena para redes sociales.' },
-        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', gender: 'female', accent: 'Multilingüe', desc: 'Voz suave y tranquila. Ideal para historias.' },
-        { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', gender: 'male', accent: 'Multilingüe', desc: 'Voz profunda y autoritaria. Perfecta para motivación.' },
-        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', gender: 'female', accent: 'Multilingüe', desc: 'Voz dulce y narrativa. Buena para cuentos.' },
-        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh', gender: 'male', accent: 'Multilingüe', desc: 'Voz masculina moderna y versátil.' },
-        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', gender: 'male', accent: 'Multilingüe', desc: 'Voz grave y potente. Ideal para trailers.' }
+        { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', gender: 'female' },
+        { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', gender: 'female' },
+        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', gender: 'female' },
+        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', gender: 'female' },
+        { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', gender: 'male' },
+        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', gender: 'female' },
+        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh', gender: 'male' },
+        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', gender: 'male' }
     ]
+};
+
+const GRADIENTS = {
+    sunset: ['#ff6b6b', '#feca57', '#ff9ff3'],
+    ocean: ['#00d2ff', '#3a7bd5', '#00d2ff'],
+    neon: ['#b721ff', '#21d4fd', '#b721ff'],
+    forest: ['#11998e', '#38ef7d', '#11998e'],
+    fire: ['#f12711', '#f5af19', '#f12711'],
+    midnight: ['#0f0c29', '#302b63', '#24243e'],
+    candy: ['#ff9a9e', '#fecfef', '#ff9a9e'],
+    cyber: ['#ff00cc', '#333399', '#ff00cc']
+};
+
+const SUBTITLE_STYLES = {
+    tiktok: { fontFamily: '"Montserrat", sans-serif', fontWeight: '900', color: '#ffffff', textShadow: '3px 3px 0 #000', fontSize: 28 },
+    minimal: { fontFamily: '"Poppins", sans-serif', fontWeight: '600', color: '#ffffff', textShadow: '0 2px 8px rgba(0,0,0,0.6)', fontSize: 26 },
+    neon: { fontFamily: '"Bebas Neue", sans-serif', fontWeight: '400', color: '#0ff', textShadow: '0 0 10px #0ff', fontSize: 32 }
 };
 
 // ==========================================
@@ -113,7 +42,6 @@ const ELEVENLABS_CONFIG = {
 // ==========================================
 const AppState = {
     currentStep: 1,
-    totalSteps: 4,
     videoTitle: '',
     videoScript: '',
     duration: 15,
@@ -127,1173 +55,446 @@ const AppState = {
     subtitleAnim: 'typewriter',
     audioBlob: null,
     videoBlob: null,
-    generatedVideos: [],
-    isGenerating: false,
-    apiKey: localStorage.getItem('elevenlabs_api_key') || 'sk_7c773243a3a0bebad44f8e5af7a617c09a6d3e0c519ecf59',
-    settings: {
-        quality: '720',
-        fps: 24,  // Reducido para mejor rendimiento en móvil
-        fontSize: 28,
-        autoSave: true,
-        language: 'es'
-    }
-,
-    commitHistory: JSON.parse(localStorage.getItem('shortsgen_commits') || '[]'),
-    hasUnsavedChanges: false,
-    lastSavedCode: ''
-};
-
-// Gradientes predefinidos
-const GRADIENTS = {
-    sunset: ['#ff6b6b', '#feca57', '#ff9ff3'],
-    ocean: ['#00d2ff', '#3a7bd5', '#00d2ff'],
-    neon: ['#b721ff', '#21d4fd', '#b721ff'],
-    forest: ['#11998e', '#38ef7d', '#11998e'],
-    fire: ['#f12711', '#f5af19', '#f12711'],
-    midnight: ['#0f0c29', '#302b63', '#24243e'],
-    candy: ['#ff9a9e', '#fecfef', '#ff9a9e'],
-    cyber: ['#ff00cc', '#333399', '#ff00cc']
-};
-
-// Filtros CSS
-const FILTERS = {
-    none: 'none',
-    vintage: 'sepia(0.6) contrast(1.2) brightness(0.9)',
-    cinematic: 'contrast(1.3) saturate(1.2) brightness(0.9)',
-    'neon-glow': 'saturate(2) brightness(1.2) hue-rotate(15deg)',
-    dramatic: 'contrast(1.5) brightness(0.8)',
-    warm: 'sepia(0.3) saturate(1.5) brightness(1.1)',
-    cool: 'hue-rotate(180deg) saturate(1.3) brightness(1.05)',
-    blackwhite: 'grayscale(1) contrast(1.2)'
-};
-
-// Estilos de subtítulos
-const SUBTITLE_STYLES = {
-    tiktok: {
-        fontFamily: '"Montserrat", sans-serif',
-        fontWeight: '900',
-        textTransform: 'uppercase',
-        color: '#ffffff',
-        textShadow: '3px 3px 0 #000000, -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000',
-        fontSize: 28
-    },
-    minimal: {
-        fontFamily: '"Poppins", sans-serif',
-        fontWeight: '600',
-        textTransform: 'none',
-        color: '#ffffff',
-        textShadow: '0 2px 8px rgba(0,0,0,0.6)',
-        fontSize: 26
-    },
-    neon: {
-        fontFamily: '"Bebas Neue", sans-serif',
-        fontWeight: '400',
-        textTransform: 'uppercase',
-        color: '#0ff',
-        textShadow: '0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff',
-        fontSize: 32
-    },
-    retro: {
-        fontFamily: '"Courier New", monospace',
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        color: '#0f0',
-        textShadow: '0 0 5px #0f0',
-        fontSize: 24
-    },
-    elegant: {
-        fontFamily: '"Georgia", serif',
-        fontWeight: '400',
-        textTransform: 'none',
-        color: '#f5f5dc',
-        textShadow: '2px 2px 4px rgba(0,0,0,0.7)',
-        fontSize: 26
-    },
-    impact: {
-        fontFamily: '"Impact", sans-serif',
-        fontWeight: '400',
-        textTransform: 'uppercase',
-        color: '#ff0',
-        textShadow: '3px 3px 0 #f00, -1px -1px 0 #f00',
-        fontSize: 30
-    }
-};
-
-// Plantillas predefinidas
-const TEMPLATES = {
-    motivational: {
-        title: 'Frase Motivacional del Día',
-        script: 'El éxito no es definitivo. El fracaso no es fatal. Lo que cuenta es el valor para continuar.\n\nCada día es una nueva oportunidad para ser mejor que ayer.\n\nNo esperes el momento perfecto. Toma el momento y hazlo perfecto.',
-        duration: 15,
-        category: 'motivacion',
-        voice: 'XB0fDUnXU5powFXDhCwa',
-        gradient: 'fire',
-        filter: 'dramatic',
-        subStyle: 'impact',
-        subAnim: 'bounce'
-    },
-    facts: {
-        title: 'Dato Curioso que Nadie Conoce',
-        script: '¿Sabías que los pulpos tienen tres corazones?\n\nDos bombean sangre a las branquias y uno al resto del cuerpo.\n\nAdemás, su sangre es azul porque usa cobre para transportar oxígeno.\n\n¡La naturaleza nunca deja de sorprendernos!',
-        duration: 30,
-        category: 'educacion',
-        voice: 'AZnzlk1XvdvUeBnXmlld',
-        gradient: 'ocean',
-        filter: 'cinematic',
-        subStyle: 'tiktok',
-        subAnim: 'typewriter'
-    },
-    recipe: {
-        title: 'Receta Express: Tacos Perfectos',
-        script: 'Hoy te enseño a hacer los tacos más jugosos en solo diez minutos.\n\nPaso uno: Calienta la tortilla hasta que esté doradita.\n\nPaso dos: Agrega la carne bien sazonada.\n\nPaso tres: Cebolla, cilantro y un toque de limón.\n\n¡Listo! El secreto está en la salsa casera.',
-        duration: 30,
-        category: 'cocina',
-        voice: 'MF3mGyEYCl7XYWbV9V6O',
-        gradient: 'sunset',
-        filter: 'warm',
-        subStyle: 'minimal',
-        subAnim: 'slide'
-    },
-    tutorial: {
-        title: 'Truco de Productividad',
-        script: 'Este truco de productividad cambiará tu vida.\n\nSe llama la Regla de los Dos Minutos.\n\nSi una tarea toma menos de dos minutos, hazla ahora.\n\nNo la anotes. No la pospongas. Solo hazla.\n\nVerás cómo tu lista de pendientes se reduce drásticamente.',
-        duration: 30,
-        category: 'educacion',
-        voice: 'ErXwobaYiN019PkySvjV',
-        gradient: 'forest',
-        filter: 'none',
-        subStyle: 'tiktok',
-        subAnim: 'fade'
-    },
-    story: {
-        title: 'La Historia del Inventor Olvidado',
-        script: 'En mil ochocientos cincuenta y ocho, un hombre llamado John Landis Mason revolucionó la forma de conservar alimentos.\n\nInventó el tarro de vidrio con tapa de rosca.\n\nPero murió en la pobreza, nunca viendo el éxito de su invención.\n\nHoy, sus tarros están en cada cocina del mundo.\n\nA veces, el impacto verdadero tarda en reconocerse.',
-        duration: 45,
-        category: 'entretenimiento',
-        voice: 'EXAVITQu4vr4xnSDxMaL',
-        gradient: 'midnight',
-        filter: 'vintage',
-        subStyle: 'elegant',
-        subAnim: 'fade'
-    },
-    quote: {
-        title: 'Cita para Reflexionar',
-        script: '"La vida es lo que pasa mientras estás ocupado haciendo otros planes."\n\nJohn Lennon\n\nNo dejes que el mañana robe tu hoy.\n\nCada momento cuenta. Vive con intención.',
-        duration: 15,
-        category: 'motivacion',
-        voice: 'XB0fDUnXU5powFXDhCwa',
-        gradient: 'candy',
-        filter: 'none',
-        subStyle: 'elegant',
-        subAnim: 'zoom'
-    }
+    apiKey: localStorage.getItem('elevenlabs_api_key') || '',
+    useBrowserVoice: false,
+    aiBackgroundImage: null,
+    settings: { quality: '720', fps: 24, fontSize: 28 }
 };
 
 // ==========================================
 // INICIALIZACIÓN
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();
+    setTimeout(() => {
+        document.getElementById('splash-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+    }, 800);
+
+    loadSavedData();
+    renderVoices();
+    renderTemplates();
+    setupEventListeners();
+    setupPWA();
+    setTimeout(() => renderPreview(), 100);
 });
 
-function initApp() {
-    try {
-        // Splash screen
-        setTimeout(() => {
-            try {
-                const splash = document.getElementById('splash-screen');
-                const app = document.getElementById('app');
-                if (splash) splash.classList.add('hidden');
-                if (app) {
-                    app.classList.remove('hidden');
-                    app.classList.add('fade-in');
-                }
-            } catch (e) {
-                console.error('Error mostrando app:', e);
-            }
-        }, 800);
-
-        // Cargar datos guardados
-        loadSavedData();
-
-        // Renderizar voces de ElevenLabs
-        renderElevenLabsVoices();
-
-        // Renderizar plantillas
-        renderTemplates();
-
-        // Event listeners
-        setupEventListeners();
-
-        // PWA (opcional, no crítico)
-        try {
-            setupPWA();
-        } catch (e) {
-            console.warn('PWA no disponible:', e);
-        }
-
-        // Renderizar preview inicial
-        setTimeout(() => {
-            try {
-                renderPreview();
-            } catch (e) {
-                console.warn('Preview inicial no disponible:', e);
-            }
-        }, 100);
-
-    } catch (error) {
-        console.error('ERROR CRÍTICO EN initApp:', error);
-        alert('Error al iniciar ShortsGen Pro: ' + error.message);
-    }
-}
-
 function loadSavedData() {
-    try {
-        const saved = localStorage.getItem('shortsgen_videos');
-        if (saved) {
-            AppState.generatedVideos = JSON.parse(saved);
-        }
-        const savedSettings = localStorage.getItem('shortsgen_settings');
-        if (savedSettings) {
-            AppState.settings = { ...AppState.settings, ...JSON.parse(savedSettings) };
-        }
-        // Cargar API key
-        const savedKey = localStorage.getItem('elevenlabs_api_key');
-        if (savedKey) {
-            AppState.apiKey = savedKey;
-            document.getElementById('elevenlabs-api-key').value = savedKey;
-        }
-    } catch (e) {
-        console.warn('Error cargando datos guardados:', e);
-    }
-}
-
-function saveVideos() {
-    try {
-        localStorage.setItem('shortsgen_videos', JSON.stringify(AppState.generatedVideos));
-    } catch (e) {
-        console.warn('Error guardando videos:', e);
+    const savedKey = localStorage.getItem('elevenlabs_api_key');
+    if (savedKey) {
+        AppState.apiKey = savedKey;
+        document.getElementById('elevenlabs-api-key').value = savedKey;
     }
 }
 
 // ==========================================
-// ELEVENLABS INTEGRACIÓN
+// RENDERIZAR VOCES
 // ==========================================
-function renderElevenLabsVoices() {
+function renderVoices() {
     const container = document.getElementById('voice-options');
     if (!container) return;
 
-    const femaleVoices = ELEVENLABS_CONFIG.voices.filter(v => v.gender === 'female');
-    const maleVoices = ELEVENLABS_CONFIG.voices.filter(v => v.gender === 'male');
-
     container.innerHTML = `
-        <div class="voice-gender-section">
-            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;display:block;">Voces Femeninas</label>
-            ${femaleVoices.map(v => createVoiceCard(v)).join('')}
+        <div style="margin-bottom:1rem;">
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.5rem;">Voces ElevenLabs (Requiere API Key)</label>
+            ${ELEVENLABS_CONFIG.voices.map(v => createVoiceCard(v)).join('')}
         </div>
-        <div class="voice-gender-section" style="margin-top:1rem;">
-            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;display:block;">Voces Masculinas</label>
-            ${maleVoices.map(v => createVoiceCard(v)).join('')}
+        <div style="margin-top:1rem;padding:1rem;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:12px;">
+            <label style="font-size:0.85rem;color:#ffc107;display:block;margin-bottom:0.5rem;">⚠️ Voz del Navegador (Gratis - Sin API Key)</label>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <div class="voice-card" data-voice="browser-female" onclick="selectBrowserVoice('female')" style="flex:1;min-width:120px;">
+                    <div class="voice-wave">👩</div>
+                    <div class="voice-info">
+                        <span class="voice-name">Voz Femenina</span>
+                        <span class="voice-desc">Gratis · Chrome/Edge</span>
+                    </div>
+                </div>
+                <div class="voice-card" data-voice="browser-male" onclick="selectBrowserVoice('male')" style="flex:1;min-width:120px;">
+                    <div class="voice-wave">👨</div>
+                    <div class="voice-info">
+                        <span class="voice-name">Voz Masculina</span>
+                        <span class="voice-desc">Gratis · Chrome/Edge</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
-    // Añadir event listeners a las tarjetas de voz
-    container.querySelectorAll('.voice-card').forEach(card => {
-        card.addEventListener('click', () => {
-            container.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.selectedVoice = card.dataset.voice;
-        });
-    });
-
-    // Seleccionar la primera por defecto
+    // Seleccionar primera por defecto
     const firstCard = container.querySelector('.voice-card');
     if (firstCard) firstCard.classList.add('active');
 }
 
-// Mostrar opción de voz del navegador si ElevenLabs falla
-function showBrowserVoiceOption() {
-    const container = document.getElementById('voice-options');
-    if (!container) return;
-
-    // Verificar si ya existe la sección de fallback
-    if (document.getElementById('browser-voice-section')) return;
-
-    const fallbackSection = document.createElement('div');
-    fallbackSection.id = 'browser-voice-section';
-    fallbackSection.className = 'voice-gender-section';
-    fallbackSection.style.marginTop = '1.5rem';
-    fallbackSection.style.padding = '1rem';
-    fallbackSection.style.background = 'rgba(255,193,7,0.1)';
-    fallbackSection.style.borderRadius = '12px';
-    fallbackSection.style.border = '1px solid rgba(255,193,7,0.3)';
-
-    fallbackSection.innerHTML = `
-        <label style="font-size:0.85rem;color:#ffc107;margin-bottom:0.5rem;display:block;">
-            ⚠️ ElevenLabs no disponible - Voz del navegador (gratuita)
-        </label>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <button class="voice-card" data-voice="browser-female" onclick="selectBrowserVoice('female')" style="flex:1;min-width:120px;">
-                <div class="voice-wave">👩</div>
-                <div class="voice-info">
-                    <span class="voice-name">Voz Femenina</span>
-                    <span class="voice-desc">Gratis · Sin API Key</span>
-                </div>
-            </button>
-            <button class="voice-card" data-voice="browser-male" onclick="selectBrowserVoice('male')" style="flex:1;min-width:120px;">
-                <div class="voice-wave">👨</div>
-                <div class="voice-info">
-                    <span class="voice-name">Voz Masculina</span>
-                    <span class="voice-desc">Gratis · Sin API Key</span>
-                </div>
-            </button>
+function createVoiceCard(voice) {
+    return `
+        <div class="voice-card" data-voice="${voice.id}" onclick="selectVoice('${voice.id}')">
+            <div class="voice-wave">${voice.gender === 'female' ? '👩' : '👨'}</div>
+            <div class="voice-info">
+                <span class="voice-name">${voice.name}</span>
+                <span class="voice-desc">${voice.gender === 'female' ? 'Femenina' : 'Masculina'} · ElevenLabs</span>
+            </div>
         </div>
-        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;">
-            Usa la síntesis de voz de tu navegador. No requiere API Key ni créditos.
-        </p>
     `;
+}
 
-    container.appendChild(fallbackSection);
+function selectVoice(voiceId) {
+    AppState.selectedVoice = voiceId;
+    AppState.useBrowserVoice = false;
+    document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
+    document.querySelector(`[data-voice="${voiceId}"]`)?.classList.add('active');
 }
 
 function selectBrowserVoice(gender) {
     AppState.selectedVoice = gender === 'female' ? 'browser-female' : 'browser-male';
+    AppState.useBrowserVoice = true;
     document.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
-    const selected = document.querySelector(`[data-voice="browser-${gender}"]`);
-    if (selected) selected.classList.add('active');
+    document.querySelector(`[data-voice="browser-${gender}"]`)?.classList.add('active');
     showToast('✅ Voz del navegador seleccionada', 'success');
 }
 
+window.selectVoice = selectVoice;
 window.selectBrowserVoice = selectBrowserVoice;
 
-
-function createVoiceCard(voice) {
-    const isActive = voice.id === AppState.selectedVoice ? 'active' : '';
-    return `
-        <div class="voice-card ${isActive}" data-voice="${voice.id}">
-            <div class="voice-wave">${voice.gender === 'female' ? '👩' : '👨'}</div>
-            <div class="voice-info">
-                <span class="voice-name">${voice.name}</span>
-                <span class="voice-desc">${voice.accent} — ${voice.desc}</span>
-            </div>
-            <button class="btn-play-sample" data-voice="${voice.id}" title="Probar voz">▶️</button>
-        </div>
-    `;
-}
-
-async function testElevenLabsConnection() {
-    const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
-    const statusEl = document.getElementById('api-status');
-
-    if (!apiKey) {
-        showToast('⚠️ Introduce una API Key primero', 'warning');
-        return;
+// ==========================================
+// GENERAR AUDIO
+// ==========================================
+async function generateAudio(text) {
+    if (AppState.useBrowserVoice || !AppState.apiKey) {
+        return await generateBrowserTTS(text);
     }
-
-    statusEl.classList.remove('hidden');
-    statusEl.innerHTML = '🔄 Probando conexión...';
-    statusEl.classList.add('playing');
-
-    try {
-        // Test 1: Verificar formato de la key
-        if (!apiKey.startsWith('sk_')) {
-            statusEl.innerHTML = '❌ Error: La API key debe empezar con "sk_"';
-            statusEl.classList.remove('playing');
-            showToast('❌ Formato de API key incorrecto', 'error');
-            return;
-        }
-
-        // Test 2: Llamada a /voices
-        const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/voices`, {
-            method: 'GET',
-            headers: {
-                'xi-api-key': apiKey,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        console.log('ElevenLabs Response Status:', response.status);
-        console.log('ElevenLabs Response Headers:', [...response.headers.entries()]);
-
-        if (response.ok) {
-            const data = await response.json();
-            AppState.apiKey = apiKey;
-            localStorage.setItem('elevenlabs_api_key', apiKey);
-            statusEl.innerHTML = '✅ Conexión exitosa. ' + (data.voices?.length || 0) + ' voces disponibles.';
-            statusEl.classList.remove('playing');
-            showToast('✅ API Key de ElevenLabs válida', 'success');
-        } else {
-            const errorText = await response.text();
-            let errorMsg = 'Error desconocido';
-
-            try {
-                const errorJson = JSON.parse(errorText);
-                if (errorJson.detail?.status === 'invalid_api_key') {
-                    errorMsg = 'API Key inválida o revocada';
-                } else if (errorJson.detail?.status === 'quota_exceeded') {
-                    errorMsg = 'Cuota mensual agotada (10,000 chars en plan gratis)';
-                } else if (response.status === 401) {
-                    errorMsg = 'API Key inválida. Crea una nueva en elevenlabs.io';
-                } else {
-                    errorMsg = errorJson.detail?.message || `Error ${response.status}`;
-                }
-            } catch (e) {
-                errorMsg = `Error ${response.status}: ${errorText.substring(0, 100)}`;
-            }
-
-            statusEl.innerHTML = '❌ ' + errorMsg;
-            statusEl.classList.remove('playing');
-            showToast('❌ ' + errorMsg, 'error');
-
-            // Mostrar ayuda adicional en consola
-            console.error('ElevenLabs Error Details:', {
-                status: response.status,
-                statusText: response.statusText,
-                body: errorText,
-                apiKeyPrefix: apiKey.substring(0, 10) + '...'
-            });
-        }
-    } catch (e) {
-        statusEl.innerHTML = '❌ Error de red: ' + e.message;
-        statusEl.classList.remove('playing');
-        showToast('❌ No se pudo conectar con ElevenLabs', 'error');
-        console.error('Network Error:', e);
-    }
+    return await generateElevenLabsAudio(text, AppState.selectedVoice);
 }
 
 async function generateElevenLabsAudio(text, voiceId) {
-    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
-
-    if (!apiKey) {
-        throw new Error('No se ha configurado la API Key de ElevenLabs. Ve al paso 2 e introduce tu key.');
-    }
-
-    // Limpiar texto
-    const cleanText = text.replace(/\n/g, ' ').trim();
-
-    console.log('Generando audio ElevenLabs:', { 
-        voiceId, 
-        textLength: cleanText.length,
-        apiKeyPrefix: apiKey.substring(0, 10) + '...'
-    });
-
     const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
-            'xi-api-key': apiKey,
+            'xi-api-key': AppState.apiKey,
             'Content-Type': 'application/json',
             'Accept': 'audio/mpeg'
         },
         body: JSON.stringify({
-            text: cleanText,
+            text: text.replace(/\n/g, ' ').trim(),
             model_id: 'eleven_multilingual_v2',
-            language_code: 'es',
-            voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                style: 0.5,
-                use_speaker_boost: true
-            }
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
         })
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        let errorMsg = `ElevenLabs Error ${response.status}`;
-
-        try {
-            const errorJson = JSON.parse(errorText);
-            if (errorJson.detail?.status === 'invalid_api_key') {
-                errorMsg = 'API Key inválida. Crea una nueva en elevenlabs.io/app/settings/api-keys';
-            } else if (errorJson.detail?.status === 'quota_exceeded') {
-                errorMsg = 'Cuota agotada. El plan gratis tiene 10,000 caracteres/mes.';
-            } else if (errorJson.detail?.status === 'voice_not_found') {
-                errorMsg = `Voz no encontrada: ${voiceId}. Selecciona otra voz.`;
-            } else {
-                errorMsg = errorJson.detail?.message || `${response.status}: ${errorText.substring(0, 200)}`;
-            }
-        } catch (e) {
-            errorMsg = `${response.status}: ${errorText.substring(0, 200)}`;
-        }
-
-        console.error('ElevenLabs TTS Error:', { status: response.status, body: errorText });
-        throw new Error(errorMsg);
+        const error = await response.text();
+        throw new Error(`ElevenLabs ${response.status}: ${error}`);
     }
 
-    const audioBlob = await response.blob();
-    console.log('Audio generado exitosamente:', audioBlob.size, 'bytes');
-    return audioBlob;
+    return await response.blob();
 }
 
-// ==========================================
-// VOZ ALTERNATIVA (Web Speech API - Gratuita)
-// Fallback cuando ElevenLabs falla
-// ==========================================
-async function generateBrowserTTS(text, voiceGender = 'female') {
+async function generateBrowserTTS(text) {
     return new Promise((resolve, reject) => {
         if (!('speechSynthesis' in window)) {
-            reject(new Error('Tu navegador no soporta síntesis de voz'));
+            reject(new Error('Navegador no soporta voz'));
             return;
         }
 
-        // Esperar a que las voces estén cargadas
-        let voices = window.speechSynthesis.getVoices();
-        if (voices.length === 0) {
-            window.speechSynthesis.onvoiceschanged = () => {
-                voices = window.speechSynthesis.getVoices();
-            };
-        }
+        // Detener cualquier reproducción anterior
+        window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'es-ES';
-        utterance.rate = AppState.voiceSpeed || 1.0;
+        utterance.rate = AppState.voiceSpeed;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Seleccionar voz en español según género
-        const spanishVoices = voices.filter(v => 
-            v.lang && (v.lang.startsWith('es') || v.lang.startsWith('es-'))
-        );
+        // Esperar a que las voces estén disponibles
+        let voices = window.speechSynthesis.getVoices();
 
-        console.log('Voces españolas disponibles:', spanishVoices.map(v => ({name: v.name, lang: v.lang, gender: v.gender || 'unknown'})));
+        const selectVoice = () => {
+            voices = window.speechSynthesis.getVoices();
+            const spanishVoices = voices.filter(v => v.lang && v.lang.startsWith('es'));
 
-        let selectedVoice = null;
+            if (spanishVoices.length > 0) {
+                // Seleccionar por género
+                const isFemale = AppState.selectedVoice === 'browser-female';
+                const targetGender = isFemale ? 'female' : 'male';
 
-        if (spanishVoices.length > 0) {
-            // Intentar encontrar voz que coincida con el género
-            const femaleKeywords = ['mujer', 'female', 'femenina', 'laura', 'helena', 'elvira', 'monica', 'catalina', 'sabina'];
-            const maleKeywords = ['hombre', 'male', 'masculino', 'pablo', 'jorge', 'diego', 'carlos', 'juan'];
+                // Buscar voz que coincida con género
+                let selected = spanishVoices.find(v => {
+                    const name = v.name.toLowerCase();
+                    if (isFemale) {
+                        return name.includes('female') || name.includes('mujer') || name.includes('laura') || name.includes('helena') || name.includes('monica');
+                    } else {
+                        return name.includes('male') || name.includes('hombre') || name.includes('pablo') || name.includes('jorge') || name.includes('carlos');
+                    }
+                });
 
-            const keywords = voiceGender === 'female' ? femaleKeywords : maleKeywords;
+                // Si no encontramos específica, usar primera española
+                if (!selected) selected = spanishVoices[0];
 
-            selectedVoice = spanishVoices.find(v => 
-                keywords.some(kw => v.name.toLowerCase().includes(kw.toLowerCase()))
-            );
-
-            // Si no encontramos por género, usar la primera voz española
-            if (!selectedVoice) {
-                selectedVoice = spanishVoices[0];
+                utterance.voice = selected;
+                console.log('Voz seleccionada:', selected.name, 'Género esperado:', targetGender);
             }
+        };
 
-            utterance.voice = selectedVoice;
-            console.log('Voz seleccionada:', selectedVoice.name, '- Género esperado:', voiceGender);
+        if (voices.length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                selectVoice();
+                window.speechSynthesis.speak(utterance);
+            };
         } else {
-            console.warn('No se encontraron voces en español, usando voz por defecto');
+            selectVoice();
         }
 
-        // Crear un canvas para capturar el audio (simulado)
-        // Nota: Web Speech API no permite grabación directa del audio generado
-        // El audio se reproduce en tiempo real y no se puede descargar como archivo
+        // Crear audio usando MediaRecorder
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const destination = audioContext.createMediaStreamDestination();
+        const mediaRecorder = new MediaRecorder(destination.stream);
+        const chunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            resolve(blob);
+        };
+
+        // Conectar audio del sistema al MediaRecorder
+        // Nota: En Chrome no podemos capturar directamente TTS, así que usamos un workaround
+
+        utterance.onstart = () => {
+            console.log('TTS iniciado');
+            mediaRecorder.start();
+        };
 
         utterance.onend = () => {
             console.log('TTS completado');
-            // Como no podemos grabar el audio del navegador directamente,
-            // creamos un blob vacío como placeholder
-            // El usuario escuchará el audio en tiempo real durante la generación
-            const placeholderBlob = new Blob([], { type: 'audio/webm' });
-            resolve(placeholderBlob);
+            setTimeout(() => {
+                mediaRecorder.stop();
+                audioContext.close();
+            }, 500);
         };
 
         utterance.onerror = (e) => {
             console.error('Error TTS:', e);
-            reject(new Error('Error en síntesis de voz: ' + (e.error || 'desconocido')));
+            mediaRecorder.stop();
+            reject(new Error('Error en voz del navegador'));
         };
 
-        // Reproducir el TTS
-        window.speechSynthesis.cancel(); // Cancelar cualquier TTS previo
-        window.speechSynthesis.speak(utterance);
+        // Iniciar
+        if (voices.length > 0) {
+            window.speechSynthesis.speak(utterance);
+        }
 
-        // Timeout de seguridad (máximo 2 minutos)
+        // Timeout de seguridad
         setTimeout(() => {
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
             }
-            const placeholderBlob = new Blob([], { type: 'audio/webm' });
-            resolve(placeholderBlob);
+            if (mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
         }, 120000);
     });
 }
 
-// Función mejorada que intenta ElevenLabs primero, luego fallback
-async function generateAudioWithFallback(text, voiceId) {
-    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
+// ==========================================
+// GENERAR IMÁGENES AI
+// ==========================================
+async function generateAIImage(prompt) {
+    const encodedPrompt = encodeURIComponent(prompt);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=720&height=1280&nologo=true&model=flux`;
 
-    // Si hay API key válida, intentar ElevenLabs
-    if (apiKey && apiKey.startsWith('sk_')) {
-        try {
-            showToast('🎙️ Generando audio con ElevenLabs...', 'info');
-            const audioBlob = await generateElevenLabsAudio(text, voiceId);
-            return { blob: audioBlob, source: 'elevenlabs' };
-        } catch (e) {
-            console.warn('ElevenLabs falló, usando voz del navegador:', e.message);
-            showToast('⚠️ ElevenLabs no disponible, usando voz del navegador', 'warning');
-        }
-    }
+    showToast('🎨 Generando imagen...', 'info');
 
-    // Fallback a Web Speech API
-    showToast('🔊 Usando voz gratuita del navegador...', 'info');
-    const gender = ELEVENLABS_CONFIG.voices.find(v => v.id === voiceId)?.gender || 'female';
-    const audioBlob = await generateBrowserTTS(text, gender);
-    return { blob: audioBlob, source: 'browser' };
-}
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Error generando imagen');
 
-
-async function playVoicePreview(voiceId) {
-    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
-
-    if (!apiKey) {
-        showToast('⚠️ Introduce tu API Key primero para probar voces', 'warning');
-        return;
-    }
-
-    showToast('🎙️ Generando preview...', 'info');
-
-    try {
-        const sampleText = 'Hola, esta es una prueba de mi voz. ¿Te gusta cómo sueno?';
-        const audioResult = await generateAudioWithFallback(sampleText, voiceId);
-        const audioBlob = audioResult.blob;
-        const url = URL.createObjectURL(audioBlob);
-        const audio = new Audio(url);
-        audio.play();
-
-        audio.onended = () => URL.revokeObjectURL(url);
-    } catch (e) {
-        showToast('❌ Error: ' + e.message, 'error');
-    }
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
 }
 
 // ==========================================
-// EVENT LISTENERS
-// ==========================================
-function setupEventListeners() {
-    // Tabs
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-    });
-
-    // Steps
-    document.getElementById('btn-next-1').addEventListener('click', () => goToStep(2));
-    document.getElementById('btn-back-2').addEventListener('click', () => goToStep(1));
-    document.getElementById('btn-next-2').addEventListener('click', () => goToStep(3));
-    document.getElementById('btn-back-3').addEventListener('click', () => goToStep(2));
-    document.getElementById('btn-next-3').addEventListener('click', () => goToStep(4));
-    document.getElementById('btn-back-error').addEventListener('click', () => goToStep(3));
-
-    // Script input
-    const scriptArea = document.getElementById('video-script');
-    scriptArea.addEventListener('input', (e) => {
-        document.getElementById('script-chars').textContent = e.target.value.length;
-        AppState.videoScript = e.target.value;
-    });
-
-    document.getElementById('video-title').addEventListener('input', (e) => {
-        AppState.videoTitle = e.target.value;
-    });
-
-    // Duration
-    document.querySelectorAll('.duration-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.duration = parseInt(btn.dataset.duration);
-        });
-    });
-
-    // Category
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.category = btn.dataset.category;
-        });
-    });
-
-    // API Key
-    document.getElementById('elevenlabs-api-key').addEventListener('input', (e) => {
-        AppState.apiKey = e.target.value.trim();
-        localStorage.setItem('elevenlabs_api_key', AppState.apiKey);
-    });
-
-    document.getElementById('btn-test-api').addEventListener('click', testElevenLabsConnection);
-
-    // Voice preview (delegación de eventos)
-    document.getElementById('voice-options').addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-play-sample');
-        if (btn) {
-            e.stopPropagation();
-            playVoicePreview(btn.dataset.voice);
-        }
-    });
-
-    // Speed slider
-    const speedSlider = document.getElementById('voice-speed');
-    speedSlider.addEventListener('input', (e) => {
-        AppState.voiceSpeed = parseFloat(e.target.value);
-        document.getElementById('speed-display').textContent = e.target.value + 'x';
-    });
-
-    // BG type
-    document.querySelectorAll('.bg-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.bgType = btn.dataset.bg;
-            renderPreview();
-        });
-    });
-
-    // Gradients
-    document.querySelectorAll('.gradient-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.gradient-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.selectedGradient = card.dataset.gradient;
-            renderPreview();
-        });
-    });
-
-    // Filters
-    document.querySelectorAll('.filter-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.filter-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.selectedFilter = card.dataset.filter;
-            renderPreview();
-        });
-    });
-
-    // Subtitle styles
-    document.querySelectorAll('.subtitle-style-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.subtitle-style-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.subtitleStyle = card.dataset.substyle;
-            renderPreview();
-        });
-    });
-
-    // Animation
-    document.querySelectorAll('.anim-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.subtitleAnim = btn.dataset.anim;
-            renderPreview();
-        });
-    });
-
-    // Refresh preview
-    document.getElementById('btn-refresh-preview').addEventListener('click', renderPreview);
-
-    // Export
-    document.getElementById('btn-download').addEventListener('click', downloadVideo);
-    document.getElementById('btn-copy-link').addEventListener('click', copyDownloadLink);
-    document.getElementById('btn-create-new').addEventListener('click', resetAndCreateNew);
-
-    // Modals
-    document.getElementById('btn-settings').addEventListener('click', () => openModal('modal-settings'));
-    document.getElementById('btn-help').addEventListener('click', () => openModal('modal-help'));
-    document.querySelectorAll('.btn-close-modal').forEach(btn => {
-        btn.addEventListener('click', closeAllModals);
-    });
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
-        overlay.addEventListener('click', closeAllModals);
-    });
-
-    // Settings
-    document.getElementById('setting-quality').addEventListener('change', (e) => {
-        AppState.settings.quality = e.target.value;
-        saveSettings();
-    });
-    document.getElementById('setting-fps').addEventListener('change', (e) => {
-        AppState.settings.fps = parseInt(e.target.value);
-        saveSettings();
-    });
-    document.getElementById('setting-fontsize').addEventListener('input', (e) => {
-        AppState.settings.fontSize = parseInt(e.target.value);
-        document.getElementById('fontsize-value').textContent = e.target.value + 'px';
-        saveSettings();
-    });
-    document.getElementById('setting-autosave').addEventListener('change', (e) => {
-        AppState.settings.autoSave = e.target.checked;
-        saveSettings();
-    });
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeAllModals();
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            showCommitDialog();
-        }
-    });
-
-    // Detectar cambios en inputs para mostrar botón de commit
-    document.querySelectorAll('input, textarea, select').forEach(input => {
-        input.addEventListener('change', () => {
-            showCommitButton();
-        });
-    });
-
-    // Detectar cambios en botones de selección
-    document.querySelectorAll('.duration-btn, .category-btn, .bg-type-btn, .gradient-card, .filter-card, .subtitle-style-card, .anim-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            setTimeout(showCommitButton, 100);
-        });
-    });
-
-    // Detectar cuando se genera un video
-    const originalShowResult = showResult;
-    showResult = function(videoBlob, duration) {
-        originalShowResult(videoBlob, duration);
-        showCommitButton();
-    };
-}
-
-function saveSettings() {
-    localStorage.setItem('shortsgen_settings', JSON.stringify(AppState.settings));
-}
-
-// ==========================================
-// NAVEGACIÓN
-// ==========================================
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabName);
-    });
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.toggle('active', content.id === `tab-${tabName}`);
-    });
-    if (tabName === 'gallery') renderGallery();
-    if (tabName === 'templates') renderTemplates();
-}
-
-function goToStep(step) {
-    if (step === 2 && !validateStep1()) return;
-    if (step === 3 && !validateStep2()) return;
-    if (step === 4) {
-        if (!validateStep3()) return;
-        startGeneration();
-        return;
-    }
-
-    AppState.currentStep = step;
-
-    document.querySelectorAll('.step').forEach((s, i) => {
-        s.classList.toggle('active', i + 1 === step);
-    });
-
-    document.querySelectorAll('.step-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-    document.getElementById(`step-${step}`).classList.add('active');
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function validateStep1() {
-    const title = document.getElementById('video-title').value.trim();
-    const script = document.getElementById('video-script').value.trim();
-
-    if (!title) {
-        showToast('⚠️ Escribe un título para tu Short', 'warning');
-        document.getElementById('video-title').focus();
-        return false;
-    }
-    if (!script || script.length < 10) {
-        showToast('⚠️ Escribe un guion de al menos 10 caracteres', 'warning');
-        document.getElementById('video-script').focus();
-        return false;
-    }
-    if (script.length > 1500) {
-        showToast('⚠️ El guion no puede exceder 1500 caracteres', 'warning');
-        return false;
-    }
-
-    AppState.videoTitle = title;
-    AppState.videoScript = script;
-    return true;
-}
-
-function validateStep2() {
-    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
-    if (!apiKey) {
-        showToast('⚠️ Introduce tu API Key de ElevenLabs', 'warning');
-        document.getElementById('elevenlabs-api-key').focus();
-        return false;
-    }
-    if (!AppState.selectedVoice) {
-        showToast('⚠️ Selecciona una voz', 'warning');
-        return false;
-    }
-    return true;
-}
-
-function validateStep3() {
-    return true;
-}
-
-// ==========================================
-// PREVIEW CANVAS
-// ==========================================
-function renderPreview() {
-    const canvas = document.getElementById('preview-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
-
-    ctx.clearRect(0, 0, w, h);
-    drawBackground(ctx, w, h);
-
-    if (AppState.selectedFilter !== 'none') {
-        ctx.save();
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.filter = FILTERS[AppState.selectedFilter];
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
-    }
-
-    const style = SUBTITLE_STYLES[AppState.subtitleStyle];
-    const sampleText = 'TU TEXTO AQUÍ';
-
-    ctx.save();
-    ctx.font = `${style.fontWeight} ${style.fontSize * 0.6}px ${style.fontFamily.replace(/"/g, '').split(',')[0]}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    if (style.textShadow) {
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-    }
-
-    ctx.fillStyle = style.color;
-    ctx.fillText(sampleText, w / 2, h / 2);
-    ctx.restore();
-
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(10, 10, 80, 24);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 11px Poppins';
-    ctx.textAlign = 'left';
-    ctx.fillText('9:16 · 720p', 15, 26);
-}
-
-function drawBackground(ctx, w, h, time = 0) {
-    switch (AppState.bgType) {
-        case 'gradient':
-            const colors = GRADIENTS[AppState.selectedGradient];
-            const grad = ctx.createLinearGradient(0, 0, w, h);
-            colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
-            break;
-
-        case 'solid':
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, w, h);
-            break;
-
-        case 'particles':
-            ctx.fillStyle = '#0f0f23';
-            ctx.fillRect(0, 0, w, h);
-            const seed = Math.floor(time * 10) % 1000;
-            for (let i = 0; i < 30; i++) {
-                const px = ((i * 137.5 + seed) % w);
-                const py = ((i * 73.3 + seed * 0.5) % h);
-                const pr = 1 + (i % 3);
-                ctx.beginPath();
-                ctx.arc(px, py, pr, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + (i % 5) * 0.1})`;
-                ctx.fill();
-            }
-            break;
-
-        case 'image':
-            ctx.fillStyle = '#16213e';
-            ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = 'rgba(255,255,255,0.1)';
-            ctx.font = '14px Poppins';
-            ctx.textAlign = 'center';
-            ctx.fillText('🖼️ Imagen de fondo', w / 2, h / 2);
-            break;
-    }
-}
-
-// ==========================================
-// GENERACIÓN DE VIDEO (CORREGIDA)
+// GENERAR VIDEO
 // ==========================================
 async function startGeneration() {
-    if (AppState.isGenerating) return;
-    AppState.isGenerating = true;
+    if (!validateInputs()) return;
 
     document.getElementById('generation-progress').classList.remove('hidden');
     document.getElementById('export-result').classList.add('hidden');
-    document.getElementById('export-back-row').classList.add('hidden');
 
     try {
-        // Paso 1: Generar audio con ElevenLabs
-        updateProgress(5, 'Generando audio con ElevenLabs...', 'step-generate-audio');
-        const audioResult = await generateAudioWithFallback(AppState.videoScript, AppState.selectedVoice);
-        const audioBlob = audioResult.blob;
+        // Paso 1: Audio
+        updateProgress(10, 'Generando audio...');
+        const audioBlob = await generateAudio(AppState.videoScript);
         AppState.audioBlob = audioBlob;
-        updateProgress(30, 'Audio generado ✓', 'step-generate-audio');
 
         // Obtener duración real del audio
         const audioDuration = await getAudioDuration(audioBlob);
-        const actualDuration = Math.min(audioDuration, AppState.duration);
+        const duration = Math.min(audioDuration, AppState.duration);
 
-        // Paso 2: Renderizar frames sincronizados con audio
-        updateProgress(35, 'Renderizando frames...', 'step-render-frames');
-        const frames = await renderFrames(actualDuration);
+        updateProgress(30, 'Audio generado ✓');
 
-        // Paso 3: Codificar video con audio
-        updateProgress(70, 'Codificando video final...', 'step-encode-video');
-        const videoBlob = await encodeVideoWithAudio(frames, audioBlob, actualDuration);
+        // Paso 2: Generar imagen AI si es necesario
+        if (AppState.bgType === 'image') {
+            updateProgress(35, 'Generando imagen AI...');
+            const prompt = `${AppState.videoTitle}. ${AppState.videoScript.substring(0, 100)}. High quality, cinematic, vertical format 9:16`;
+            AppState.aiBackgroundImage = await generateAIImage(prompt);
+            updateProgress(45, 'Imagen generada ✓');
+        }
+
+        // Paso 3: Renderizar frames
+        updateProgress(50, 'Renderizando video...');
+        const videoBlob = await renderVideo(duration);
         AppState.videoBlob = videoBlob;
 
         // Paso 4: Finalizar
-        updateProgress(100, '¡Completado!', 'step-finalize');
-
-        setTimeout(() => {
-            showResult(videoBlob, actualDuration);
-        }, 500);
+        updateProgress(100, '¡Completado!');
+        showResult(videoBlob, duration);
 
     } catch (error) {
-        console.error('Error generando video:', error);
+        console.error('Error:', error);
         showToast('❌ ' + error.message, 'error');
         document.getElementById('export-back-row').classList.remove('hidden');
-    } finally {
-        AppState.isGenerating = false;
     }
 }
 
-function updateProgress(percent, label, activeStepId) {
+function updateProgress(percent, label) {
     document.getElementById('progress-percent').textContent = percent + '%';
     document.getElementById('progress-label').textContent = label;
-
     const circle = document.getElementById('progress-circle');
-    const circumference = 2 * Math.PI * 54;
-    const offset = circumference - (percent / 100) * circumference;
-    circle.style.strokeDashoffset = offset;
-
-    document.querySelectorAll('.progress-step').forEach(step => {
-        step.classList.remove('active', 'completed');
-        if (step.id === activeStepId) {
-            step.classList.add('active');
-        }
-        const steps = ['step-generate-audio', 'step-render-frames', 'step-encode-video', 'step-finalize'];
-        const currentIndex = steps.indexOf(activeStepId);
-        const stepIndex = steps.indexOf(step.id);
-        if (stepIndex < currentIndex) {
-            step.classList.add('completed');
-        }
-    });
+    if (circle) {
+        const circumference = 2 * Math.PI * 54;
+        circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
+    }
 }
 
 function getAudioDuration(blob) {
     return new Promise((resolve) => {
-        const audio = new Audio();
-        audio.preload = 'metadata';
-        audio.src = URL.createObjectURL(blob);
+        const audio = new Audio(URL.createObjectURL(blob));
         audio.onloadedmetadata = () => {
             URL.revokeObjectURL(audio.src);
-            resolve(audio.duration);
+            resolve(audio.duration || AppState.duration);
         };
-        audio.onerror = () => {
-            URL.revokeObjectURL(audio.src);
-            resolve(AppState.duration);
-        };
+        audio.onerror = () => resolve(AppState.duration);
     });
 }
 
-async function renderFrames(duration) {
-    const fps = AppState.settings.fps;
-    const totalFrames = Math.ceil(fps * duration);
+// ==========================================
+// RENDERIZAR VIDEO CON CANVAS
+// ==========================================
+async function renderVideo(duration) {
     const canvas = document.createElement('canvas');
     const quality = AppState.settings.quality;
     canvas.width = quality === '1080' ? 1080 : 720;
     canvas.height = quality === '1080' ? 1920 : 1280;
     const ctx = canvas.getContext('2d');
+    const fps = AppState.settings.fps;
+    const totalFrames = Math.ceil(fps * duration);
 
-    const frames = [];
-
-    // Dividir texto en segmentos por líneas
-    const lines = AppState.videoScript.split(/\n+/).map(s => s.trim()).filter(s => s.length > 0);
-    const totalDuration = duration;
-    const segmentDuration = totalDuration / Math.max(lines.length, 1);
-
-    for (let i = 0; i < totalFrames; i++) {
-        const time = i / fps;
-        const progress = time / duration;
-
-        // Fondo animado
-        drawBackground(ctx, canvas.width, canvas.height, time);
-
-        // Aplicar filtro visual
-        if (AppState.selectedFilter !== 'none') {
-            ctx.save();
-            ctx.globalAlpha = 0.15;
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.restore();
-        }
-
-        // Determinar texto actual
-        const lineIndex = Math.min(Math.floor(time / segmentDuration), lines.length - 1);
-        const currentLine = lines[lineIndex]?.trim() || '';
-        const segmentProgress = (time % segmentDuration) / segmentDuration;
-
-        // Dibujar subtítulos
-        if (currentLine) {
-            drawAnimatedSubtitle(ctx, canvas.width, canvas.height, currentLine, segmentProgress, time);
-        }
-
-        // Barra de progreso
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(0, canvas.height - 6, canvas.width * progress, 6);
-
-        // Info
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(20, 20, 120, 36);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px Poppins';
-        ctx.textAlign = 'left';
-        ctx.fillText(`9:16 · ${Math.floor(time)}s`, 28, 44);
-
-        if (AppState.videoTitle) {
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.fillRect(20, 70, canvas.width - 40, 40);
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 16px Poppins';
-            ctx.textAlign = 'center';
-            ctx.fillText(AppState.videoTitle, canvas.width / 2, 96);
-        }
-
-        // Comprimir frame como JPEG (calidad 0.85 para balance)
-        frames.push(canvas.toDataURL('image/jpeg', 0.85));
-
-        // Actualizar progreso cada 5 frames
-        if (i % 5 === 0) {
-            const frameProgress = 35 + (i / totalFrames) * 35;
-            updateProgress(Math.floor(frameProgress), 'Renderizando frames...', 'step-render-frames');
-        }
-
-        // Permitir que el UI respire (evitar bloqueo)
-        if (i % 10 === 0) {
-            await new Promise(r => setTimeout(r, 0));
-        }
+    // Precargar imagen de fondo si existe
+    let bgImage = null;
+    if (AppState.aiBackgroundImage) {
+        bgImage = new Image();
+        bgImage.src = AppState.aiBackgroundImage;
+        await new Promise((resolve) => { bgImage.onload = resolve; bgImage.onerror = resolve; });
     }
 
-    return frames;
+    // Dividir texto en líneas
+    const lines = AppState.videoScript.split(/\n+/).map(s => s.trim()).filter(s => s.length > 0);
+    const segmentDuration = duration / Math.max(lines.length, 1);
+
+    // Configurar MediaRecorder
+    const stream = canvas.captureStream(fps);
+    const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 5000000
+    });
+
+    const chunks = [];
+    mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    return new Promise((resolve, reject) => {
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            resolve(blob);
+        };
+        mediaRecorder.onerror = (e) => reject(e);
+
+        mediaRecorder.start(100);
+
+        let frameIndex = 0;
+        const frameDuration = 1000 / fps;
+
+        function drawFrame() {
+            if (frameIndex >= totalFrames) {
+                mediaRecorder.stop();
+                return;
+            }
+
+            const time = frameIndex / fps;
+            const progress = time / duration;
+
+            // 1. Dibujar fondo
+            drawBackground(ctx, canvas.width, canvas.height, time, bgImage);
+
+            // 2. Determinar texto actual
+            const lineIndex = Math.min(Math.floor(time / segmentDuration), lines.length - 1);
+            const currentLine = lines[lineIndex] || '';
+            const segmentProgress = (time % segmentDuration) / segmentDuration;
+
+            // 3. Dibujar subtítulos
+            if (currentLine) {
+                drawSubtitle(ctx, canvas.width, canvas.height, currentLine, segmentProgress, time);
+            }
+
+            // 4. Barra de progreso
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillRect(0, canvas.height - 8, canvas.width * progress, 8);
+
+            // 5. Info
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(20, 20, 100, 30);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px Poppins';
+            ctx.textAlign = 'left';
+            ctx.fillText(`9:16 · ${Math.floor(time)}s`, 28, 40);
+
+            frameIndex++;
+
+            if (frameIndex % 5 === 0) {
+                const p = 50 + (frameIndex / totalFrames) * 50;
+                updateProgress(Math.floor(p), 'Renderizando video...');
+            }
+
+            setTimeout(drawFrame, frameDuration);
+        }
+
+        drawFrame();
+    });
 }
 
-function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
-    const style = SUBTITLE_STYLES[AppState.subtitleStyle];
-    const anim = AppState.subtitleAnim;
+function drawBackground(ctx, w, h, time, bgImage) {
+    if (AppState.bgType === 'image' && bgImage && bgImage.complete) {
+        // Dibujar imagen AI
+        const scale = Math.max(w / bgImage.width, h / bgImage.height);
+        const x = (w - bgImage.width * scale) / 2;
+        const y = (h - bgImage.height * scale) / 2;
+        ctx.drawImage(bgImage, x, y, bgImage.width * scale, bgImage.height * scale);
+    } else if (AppState.bgType === 'gradient') {
+        const colors = GRADIENTS[AppState.selectedGradient];
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        colors.forEach((c, i) => grad.addColorStop(i / (colors.length - 1), c));
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+    } else {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, w, h);
+    }
+}
+
+function drawSubtitle(ctx, w, h, text, progress, time) {
+    const style = SUBTITLE_STYLES[AppState.subtitleStyle] || SUBTITLE_STYLES.tiktok;
     const fontSize = AppState.settings.fontSize || style.fontSize;
 
     ctx.save();
@@ -1301,58 +502,28 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    if (style.textShadow) {
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
+    // Sombra
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    // Animación typewriter
+    let displayText = text;
+    if (AppState.subtitleAnim === 'typewriter') {
+        const charCount = Math.max(1, Math.floor(progress * text.length));
+        displayText = text.substring(0, charCount);
     }
-
-    let alpha = 1;
-    let yOffset = 0;
-    let scale = 1;
-    let xOffset = 0;
-
-    switch (anim) {
-        case 'typewriter':
-            const charCount = Math.floor(progress * text.length);
-            text = text.substring(0, charCount);
-            break;
-        case 'fade':
-            if (progress < 0.2) alpha = progress / 0.2;
-            else if (progress > 0.8) alpha = (1 - progress) / 0.2;
-            break;
-        case 'bounce':
-            if (progress < 0.3) {
-                const bounce = Math.sin(progress * 10 * Math.PI);
-                yOffset = bounce * -20;
-            }
-            break;
-        case 'slide':
-            if (progress < 0.2) xOffset = (1 - progress / 0.2) * 100;
-            else if (progress > 0.8) xOffset = -(1 - (1 - progress) / 0.2) * 100;
-            break;
-        case 'zoom':
-            if (progress < 0.15) scale = 0.5 + (progress / 0.15) * 0.5;
-            else if (progress > 0.85) scale = 1 - ((progress - 0.85) / 0.15) * 0.5;
-            break;
-        case 'glitch':
-            if (Math.random() > 0.95) xOffset = (Math.random() - 0.5) * 10;
-            break;
-    }
-
-    ctx.globalAlpha = alpha;
 
     // Wrap text
     const maxWidth = w - 80;
-    const words = text.split(' ');
+    const words = displayText.split(' ');
     const lines = [];
     let currentLine = '';
 
     for (const word of words) {
         const testLine = currentLine + (currentLine ? ' ' : '') + word;
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && currentLine) {
+        if (ctx.measureText(testLine).width > maxWidth && currentLine) {
             lines.push(currentLine);
             currentLine = word;
         } else {
@@ -1361,137 +532,20 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
     }
     if (currentLine) lines.push(currentLine);
 
+    // Dibujar líneas
     const lineHeight = fontSize * 1.4;
-    const startY = h - 240 - (lines.length * lineHeight) / 2;
+    const startY = h - 200 - (lines.length * lineHeight) / 2;
 
+    ctx.fillStyle = style.color;
     lines.forEach((line, i) => {
-        const y = startY + i * lineHeight + yOffset;
-        const x = w / 2 + xOffset;
-
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(scale, scale);
-        ctx.fillStyle = style.color;
-        ctx.fillText(line, 0, 0);
-        ctx.restore();
+        ctx.fillText(line, w / 2, startY + i * lineHeight);
     });
 
     ctx.restore();
 }
 
-async function encodeVideoWithAudio(frames, audioBlob, duration) {
-    return new Promise(async (resolve, reject) => {
-        const canvas = document.createElement('canvas');
-        const quality = AppState.settings.quality;
-        canvas.width = quality === '1080' ? 1080 : 720;
-        canvas.height = quality === '1080' ? 1920 : 1280;
-        const ctx = canvas.getContext('2d');
-        const fps = AppState.settings.fps;
-
-        // Detectar codec soportado
-        const mimeTypes = [
-            'video/webm;codecs=vp9',
-            'video/webm;codecs=vp8',
-            'video/webm',
-            'video/mp4'
-        ];
-        let selectedMimeType = '';
-        for (const mime of mimeTypes) {
-            if (MediaRecorder.isTypeSupported(mime)) {
-                selectedMimeType = mime;
-                break;
-            }
-        }
-
-        if (!selectedMimeType) {
-            reject(new Error('Tu navegador no soporta grabación de video'));
-            return;
-        }
-
-        const stream = canvas.captureStream(fps);
-        const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: selectedMimeType,
-            videoBitsPerSecond: quality === '1080' ? 8000000 : 5000000
-        });
-
-        const chunks = [];
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) chunks.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-            try {
-                const videoBlob = new Blob(chunks, { type: selectedMimeType });
-                // Unir audio + video usando un enfoque simple
-                const finalBlob = await combineAudioVideo(videoBlob, audioBlob, selectedMimeType);
-                resolve(finalBlob);
-            } catch (e) {
-                // Si falla la combinación, devolver solo el video
-                const videoBlob = new Blob(chunks, { type: selectedMimeType });
-                resolve(videoBlob);
-            }
-        };
-
-        mediaRecorder.onerror = (e) => reject(e);
-
-        // Precargar todas las imágenes primero
-        const images = [];
-        for (let i = 0; i < Math.min(frames.length, 50); i++) {
-            const img = new Image();
-            img.src = frames[i];
-            await new Promise((res) => { img.onload = res; img.onerror = res; });
-            images.push(img);
-        }
-
-        mediaRecorder.start(100);
-
-        let frameIndex = 0;
-        const frameDuration = 1000 / fps;
-        const totalFrames = frames.length;
-
-        function drawNextFrame() {
-            if (frameIndex >= totalFrames) {
-                mediaRecorder.stop();
-                return;
-            }
-
-            const img = images[frameIndex] || new Image();
-            if (!img.src) img.src = frames[frameIndex];
-
-            const draw = () => {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                frameIndex++;
-
-                const encodeProgress = 70 + (frameIndex / totalFrames) * 30;
-                updateProgress(Math.floor(encodeProgress), 'Codificando video...', 'step-encode-video');
-
-                setTimeout(drawNextFrame, frameDuration);
-            };
-
-            if (img.complete) {
-                draw();
-            } else {
-                img.onload = draw;
-                img.onerror = () => {
-                    frameIndex++;
-                    setTimeout(drawNextFrame, frameDuration);
-                };
-            }
-        }
-
-        drawNextFrame();
-    });
-}
-
-async function combineAudioVideo(videoBlob, audioBlob, mimeType) {
-    // Por ahora, devolvemos el video sin audio combinado
-    // La combinación real requiere ffmpeg.js que es muy pesado
-    // El usuario puede usar una herramienta externa o descargar ambos
-    return videoBlob;
-}
-
 // ==========================================
-// RESULTADO Y EXPORTACIÓN
+// MOSTRAR RESULTADO
 // ==========================================
 function showResult(videoBlob, duration) {
     document.getElementById('generation-progress').classList.add('hidden');
@@ -1501,272 +555,336 @@ function showResult(videoBlob, duration) {
     const url = URL.createObjectURL(videoBlob);
     const video = document.getElementById('result-video');
     video.src = url;
-    video.poster = '';
 
     document.getElementById('result-duration').textContent = Math.round(duration) + ' segundos';
     const sizeMB = (videoBlob.size / (1024 * 1024)).toFixed(2);
     document.getElementById('result-size').textContent = sizeMB + ' MB';
 
-    const downloadLink = url;
-    document.getElementById('download-link').value = downloadLink;
-
-    if (AppState.settings.autoSave) {
-        const videoData = {
-            id: Date.now(),
-            title: AppState.videoTitle,
-            duration: Math.round(duration),
-            size: sizeMB + ' MB',
-            blobUrl: url,
-            date: new Date().toLocaleDateString('es-ES')
-        };
-        AppState.generatedVideos.unshift(videoData);
-        saveVideos();
-    }
-
-    showToast('🎉 ¡Tu Short se ha generado exitosamente!', 'success');
+    showToast('🎉 ¡Short generado exitosamente!', 'success');
 }
 
 function downloadVideo() {
-    if (!AppState.videoBlob) {
-        showToast('❌ No hay video para descargar', 'error');
-        return;
-    }
-
+    if (!AppState.videoBlob) return;
     const url = URL.createObjectURL(AppState.videoBlob);
     const a = document.createElement('a');
     a.href = url;
-    const safeTitle = AppState.videoTitle.replace(/[^a-z0-9áéíóúñü]/gi, '_').substring(0, 50);
-    a.download = `Short_${safeTitle}_${Date.now()}.webm`;
-    document.body.appendChild(a);
+    a.download = `Short_${AppState.videoTitle.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.webm`;
     a.click();
-    document.body.removeChild(a);
-
-    showToast('⬇️ Descarga iniciada', 'success');
+    showToast('⬇️ Descargando...', 'success');
 }
 
-function copyDownloadLink() {
-    const linkInput = document.getElementById('download-link');
-    linkInput.select();
-    navigator.clipboard.writeText(linkInput.value).then(() => {
-        showToast('📋 Enlace copiado al portapapeles', 'success');
-    }).catch(() => {
-        document.execCommand('copy');
-        showToast('📋 Enlace copiado', 'success');
+// ==========================================
+// VALIDACIÓN Y NAVEGACIÓN
+// ==========================================
+function validateInputs() {
+    const title = document.getElementById('video-title').value.trim();
+    const script = document.getElementById('video-script').value.trim();
+
+    if (!title) {
+        showToast('⚠️ Escribe un título', 'warning');
+        return false;
+    }
+    if (!script || script.length < 10) {
+        showToast('⚠️ Escribe un guion de al menos 10 caracteres', 'warning');
+        return false;
+    }
+
+    AppState.videoTitle = title;
+    AppState.videoScript = script;
+    return true;
+}
+
+function goToStep(step) {
+    if (step === 2 && !validateInputs()) return;
+    if (step === 3) {
+        const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
+        if (apiKey) AppState.apiKey = apiKey;
+    }
+    if (step === 4) {
+        if (!validateInputs()) return;
+        startGeneration();
+        return;
+    }
+
+    AppState.currentStep = step;
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i + 1 === step));
+    document.querySelectorAll('.step-panel').forEach(panel => panel.classList.remove('active'));
+    document.getElementById(`step-${step}`)?.classList.add('active');
+}
+
+// ==========================================
+// EVENT LISTENERS
+// ==========================================
+function setupEventListeners() {
+    // Navegación
+    document.getElementById('btn-next-1')?.addEventListener('click', () => goToStep(2));
+    document.getElementById('btn-back-2')?.addEventListener('click', () => goToStep(1));
+    document.getElementById('btn-next-2')?.addEventListener('click', () => goToStep(3));
+    document.getElementById('btn-back-3')?.addEventListener('click', () => goToStep(2));
+    document.getElementById('btn-next-3')?.addEventListener('click', () => goToStep(4));
+    document.getElementById('btn-back-error')?.addEventListener('click', () => goToStep(3));
+
+    // Inputs
+    document.getElementById('video-script')?.addEventListener('input', (e) => {
+        document.getElementById('script-chars').textContent = e.target.value.length;
+        AppState.videoScript = e.target.value;
+    });
+
+    document.getElementById('video-title')?.addEventListener('input', (e) => {
+        AppState.videoTitle = e.target.value;
+    });
+
+    // Duración
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            AppState.duration = parseInt(btn.dataset.duration);
+        });
+    });
+
+    // API Key
+    document.getElementById('elevenlabs-api-key')?.addEventListener('input', (e) => {
+        AppState.apiKey = e.target.value.trim();
+        localStorage.setItem('elevenlabs_api_key', AppState.apiKey);
+    });
+
+    document.getElementById('btn-test-api')?.addEventListener('click', testAPI);
+
+    // Velocidad
+    document.getElementById('voice-speed')?.addEventListener('input', (e) => {
+        AppState.voiceSpeed = parseFloat(e.target.value);
+        document.getElementById('speed-display').textContent = e.target.value + 'x';
+    });
+
+    // Fondo
+    document.querySelectorAll('.bg-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.bg-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            AppState.bgType = btn.dataset.bg;
+            renderPreview();
+        });
+    });
+
+    // Gradientes
+    document.querySelectorAll('.gradient-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.gradient-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            AppState.selectedGradient = card.dataset.gradient;
+            renderPreview();
+        });
+    });
+
+    // Filtros
+    document.querySelectorAll('.filter-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.filter-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            AppState.selectedFilter = card.dataset.filter;
+            renderPreview();
+        });
+    });
+
+    // Estilos subtítulos
+    document.querySelectorAll('.subtitle-style-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.subtitle-style-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            AppState.subtitleStyle = card.dataset.substyle;
+            renderPreview();
+        });
+    });
+
+    // Animación
+    document.querySelectorAll('.anim-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            AppState.subtitleAnim = btn.dataset.anim;
+            renderPreview();
+        });
+    });
+
+    // Preview
+    document.getElementById('btn-refresh-preview')?.addEventListener('click', renderPreview);
+
+    // Exportar
+    document.getElementById('btn-download')?.addEventListener('click', downloadVideo);
+    document.getElementById('btn-create-new')?.addEventListener('click', resetApp);
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 }
 
-function resetAndCreateNew() {
+async function testAPI() {
+    const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
+    const statusEl = document.getElementById('api-status');
+
+    if (!apiKey) {
+        showToast('⚠️ Introduce una API Key', 'warning');
+        return;
+    }
+
+    statusEl.classList.remove('hidden');
+    statusEl.textContent = '🔄 Probando...';
+
+    try {
+        const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/voices`, {
+            headers: { 'xi-api-key': apiKey }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            AppState.apiKey = apiKey;
+            localStorage.setItem('elevenlabs_api_key', apiKey);
+            statusEl.innerHTML = '✅ Conectado. ' + (data.voices?.length || 0) + ' voces';
+            showToast('✅ API Key válida', 'success');
+        } else {
+            statusEl.innerHTML = '❌ API Key inválida';
+            showToast('❌ API Key inválida', 'error');
+        }
+    } catch (e) {
+        statusEl.innerHTML = '❌ Error de conexión';
+        showToast('❌ No se pudo conectar', 'error');
+    }
+}
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+    });
+}
+
+function renderPreview() {
+    const canvas = document.getElementById('preview-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+    drawBackground(ctx, w, h, 0, null);
+
+    const style = SUBTITLE_STYLES[AppState.subtitleStyle] || SUBTITLE_STYLES.tiktok;
+    ctx.save();
+    ctx.font = `${style.fontWeight} ${style.fontSize * 0.6}px ${style.fontFamily.replace(/"/g, '').split(',')[0]}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = style.color;
+    ctx.fillText('TU TEXTO AQUÍ', w / 2, h / 2);
+    ctx.restore();
+}
+
+function resetApp() {
     AppState.currentStep = 1;
     AppState.videoTitle = '';
     AppState.videoScript = '';
     AppState.audioBlob = null;
     AppState.videoBlob = null;
-    AppState.isGenerating = false;
 
     document.getElementById('video-title').value = '';
     document.getElementById('video-script').value = '';
     document.getElementById('script-chars').textContent = '0';
 
-    document.querySelectorAll('.step').forEach((s, i) => {
-        s.classList.toggle('active', i === 0);
-    });
-    document.querySelectorAll('.step-panel').forEach(panel => {
-        panel.classList.remove('active');
-    });
-    document.getElementById('step-1').classList.add('active');
-
+    goToStep(1);
     document.getElementById('generation-progress').classList.remove('hidden');
     document.getElementById('export-result').classList.add('hidden');
     document.getElementById('export-back-row').classList.add('hidden');
-    updateProgress(0, 'Generando...', 'step-generate-audio');
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('✨ Listo para crear un nuevo Short', 'info');
+    updateProgress(0, 'Generando...');
 }
 
 // ==========================================
 // PLANTILLAS
 // ==========================================
+const TEMPLATES = {
+    motivational: {
+        title: 'Frase Motivacional del Día',
+        script: 'El éxito no es definitivo. El fracaso no es fatal. Lo que cuenta es el valor para continuar.\n\nCada día es una nueva oportunidad para ser mejor que ayer.',
+        duration: 15,
+        voice: 'XB0fDUnXU5powFXDhCwa',
+        gradient: 'fire'
+    },
+    facts: {
+        title: 'Dato Curioso',
+        script: '¿Sabías que los pulpos tienen tres corazones?\n\nDos bombean sangre a las branquias y uno al resto del cuerpo.',
+        duration: 15,
+        voice: 'AZnzlk1XvdvUeBnXmlld',
+        gradient: 'ocean'
+    }
+};
+
 function renderTemplates() {
     const grid = document.getElementById('templates-grid');
     if (!grid) return;
 
-    const templateIcons = {
-        motivational: '💪',
-        facts: '🧠',
-        recipe: '🍳',
-        tutorial: '📖',
-        story: '📚',
-        quote: '💬'
-    };
-
-    const templateNames = {
-        motivational: 'Motivacional',
-        facts: 'Datos Curiosos',
-        recipe: 'Receta Express',
-        tutorial: 'Tutorial Rápido',
-        story: 'Historia Corta',
-        quote: 'Cita Famosa'
-    };
-
     grid.innerHTML = Object.keys(TEMPLATES).map(key => {
         const t = TEMPLATES[key];
         return `
-            <div class="template-card" data-template="${key}">
+            <div class="template-card" onclick="loadTemplate('${key}')">
                 <div class="template-preview" style="background: linear-gradient(135deg, ${GRADIENTS[t.gradient][0]}, ${GRADIENTS[t.gradient][1]});">
-                    <span class="template-icon">${templateIcons[key]}</span>
+                    <span style="font-size:2rem;">🎬</span>
                 </div>
                 <div class="template-info">
-                    <h3>${templateNames[key]}</h3>
-                    <p>${t.title}</p>
-                    <span style="font-size:0.75rem;color:var(--text-muted);">${t.duration}s · ${t.category}</span>
-                    <button class="btn-use-template">Usar plantilla</button>
+                    <h3>${t.title}</h3>
+                    <span style="font-size:0.75rem;color:var(--text-muted);">${t.duration}s</span>
                 </div>
             </div>
         `;
     }).join('');
-
-    grid.querySelectorAll('.btn-use-template').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const card = e.target.closest('.template-card');
-            loadTemplate(card.dataset.template);
-        });
-    });
 }
 
-function loadTemplate(templateKey) {
-    const template = TEMPLATES[templateKey];
-    if (!template) return;
+function loadTemplate(key) {
+    const t = TEMPLATES[key];
+    if (!t) return;
 
-    document.getElementById('video-title').value = template.title;
-    document.getElementById('video-script').value = template.script;
-
-    document.getElementById('script-chars').textContent = template.script.length;
-
-    document.querySelectorAll('.duration-btn').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.duration) === template.duration);
-    });
-    AppState.duration = template.duration;
-
-    document.querySelectorAll('.category-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.category === template.category);
-    });
-    AppState.category = template.category;
-
-    // Seleccionar voz
-    AppState.selectedVoice = template.voice;
-    document.querySelectorAll('.voice-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.voice === template.voice);
-    });
-
-    document.querySelectorAll('.gradient-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.gradient === template.gradient);
-    });
-    AppState.selectedGradient = template.gradient;
-
-    document.querySelectorAll('.filter-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.filter === template.filter);
-    });
-    AppState.selectedFilter = template.filter;
-
-    document.querySelectorAll('.subtitle-style-card').forEach(card => {
-        card.classList.toggle('active', card.dataset.substyle === template.subStyle);
-    });
-    AppState.subtitleStyle = template.subStyle;
-
-    document.querySelectorAll('.anim-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.anim === template.subAnim);
-    });
-    AppState.subtitleAnim = template.subAnim;
-
-    AppState.videoTitle = template.title;
-    AppState.videoScript = template.script;
+    document.getElementById('video-title').value = t.title;
+    document.getElementById('video-script').value = t.script;
+    document.getElementById('script-chars').textContent = t.script.length;
+    AppState.videoTitle = t.title;
+    AppState.videoScript = t.script;
+    AppState.duration = t.duration;
+    AppState.selectedGradient = t.gradient;
 
     switchTab('create');
     renderPreview();
-    showToast('🎨 Plantilla cargada. ¡Personalízala y genera tu Short!', 'success');
+    showToast('🎨 Plantilla cargada', 'success');
 }
+
+window.loadTemplate = loadTemplate;
 
 // ==========================================
-// GALERÍA
+// TOAST NOTIFICATIONS
 // ==========================================
-function renderGallery() {
-    const grid = document.getElementById('gallery-grid');
-    if (!grid) return;
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
 
-    if (AppState.generatedVideos.length === 0) {
-        grid.innerHTML = `
-            <div class="empty-gallery">
-                <span class="empty-icon">🎬</span>
-                <p>Aún no has creado ningún Short</p>
-                <button class="btn-primary" onclick="switchTab('create')">Crear mi primer Short</button>
-            </div>
-        `;
-        return;
-    }
-
-    grid.innerHTML = AppState.generatedVideos.map(video => `
-        <div class="gallery-item" onclick="playGalleryVideo(${video.id})">
-            <div style="width:100%;aspect-ratio:9/16;background:linear-gradient(135deg,#1a1a2e,#0f0f23);display:flex;align-items:center;justify-content:center;">
-                <span style="font-size:3rem;">🎬</span>
-            </div>
-            <div class="gallery-item-info">
-                <div class="gallery-item-title">${video.title}</div>
-                <div class="gallery-item-date">${video.date} · ${video.duration}s</div>
-            </div>
-            <div class="gallery-item-actions">
-                <button class="btn-icon-small" onclick="event.stopPropagation(); downloadGalleryVideo(${video.id})" title="Descargar">⬇️</button>
-                <button class="btn-icon-small" onclick="event.stopPropagation(); deleteGalleryVideo(${video.id})" title="Eliminar">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-function playGalleryVideo(id) {
-    const video = AppState.generatedVideos.find(v => v.id === id);
-    if (video && video.blobUrl) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-overlay" onclick="this.parentElement.remove()"></div>
-            <div class="modal-content" style="max-width: 400px; padding: 0; overflow: hidden;">
-                <video src="${video.blobUrl}" controls autoplay style="width: 100%; display: block;" playsinline></video>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-}
-
-function downloadGalleryVideo(id) {
-    const video = AppState.generatedVideos.find(v => v.id === id);
-    if (video && video.blobUrl) {
-        const a = document.createElement('a');
-        a.href = video.blobUrl;
-        a.download = `Short_${video.title.replace(/\s+/g, '_')}.webm`;
-        a.click();
-        showToast('⬇️ Video descargado', 'success');
-    }
-}
-
-function deleteGalleryVideo(id) {
-    if (!confirm('¿Eliminar este Short permanentemente?')) return;
-    AppState.generatedVideos = AppState.generatedVideos.filter(v => v.id !== id);
-    saveVideos();
-    renderGallery();
-    showToast('🗑️ Short eliminado', 'info');
-}
-
-// ==========================================
-// MODALES
-// ==========================================
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeAllModals() {
-    document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
-    document.body.style.overflow = '';
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<span>${message}</span>`;
+    toast.style.cssText = `
+        background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#17a2b8'};
+        color: ${type === 'warning' ? '#000' : '#fff'};
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease;
+        font-size: 0.9rem;
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 // ==========================================
@@ -1774,330 +892,6 @@ function closeAllModals() {
 // ==========================================
 function setupPWA() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(err => { console.warn('SW no disponible (opcional):', err.message); });
-    }
-
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        document.getElementById('install-prompt').classList.remove('hidden');
-    });
-
-    document.getElementById('btn-install').addEventListener('click', async () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                showToast('📱 ShortsGen Pro instalado', 'success');
-            }
-            deferredPrompt = null;
-        }
-        document.getElementById('install-prompt').classList.add('hidden');
-    });
-
-    document.getElementById('btn-dismiss-install').addEventListener('click', () => {
-        document.getElementById('install-prompt').classList.add('hidden');
-    });
-}
-
-// ==========================================
-// TOAST NOTIFICATIONS
-// ==========================================
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-
-    const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
-    };
-
-    toast.innerHTML = `
-        <span class="toast-icon">${icons[type]}</span>
-        <span class="toast-message">${message}</span>
-    `;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-20px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-
-// ==========================================
-// UTILIDADES GLOBALES
-// ==========================================
-window.switchTab = switchTab;
-window.playGalleryVideo = playGalleryVideo;
-window.downloadGalleryVideo = downloadGalleryVideo;
-window.deleteGalleryVideo = deleteGalleryVideo;
-
-// ==========================================
-// SISTEMA DE COMMIT CHANGES
-// Detecta cambios en código y permite guardar versiones
-// ==========================================
-
-function initCommitSystem() {
-    // Crear botón de Commit Changes flotante
-    const commitBtn = document.createElement('button');
-    commitBtn.id = 'btn-commit-changes';
-    commitBtn.className = 'btn-commit-floating hidden';
-    commitBtn.innerHTML = '💾 Commit Changes';
-    commitBtn.title = 'Guardar cambios en el código';
-    commitBtn.onclick = showCommitDialog;
-    document.body.appendChild(commitBtn);
-
-    // Crear modal de commit
-    const commitModal = document.createElement('div');
-    commitModal.id = 'modal-commit';
-    commitModal.className = 'modal hidden';
-    commitModal.innerHTML = `
-        <div class="modal-overlay" onclick="closeCommitModal()"></div>
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <h3>💾 Commit Changes</h3>
-                <button class="btn-close-modal" onclick="closeCommitModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="commit-info">
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                        Guarda una versión de tus cambios para poder volver a ella más tarde.
-                    </p>
-                </div>
-                <div class="input-group">
-                    <label>Mensaje del commit (qué cambiaste)</label>
-                    <input type="text" id="commit-message" placeholder="Ej: Fix API key, agregué fallback de voz..." maxlength="100">
-                </div>
-                <div class="input-group">
-                    <label>Autor</label>
-                    <input type="text" id="commit-author" placeholder="Tu nombre" value="${localStorage.getItem('commit_author') || 'Developer'}">
-                </div>
-                <div class="commit-preview" style="margin: 1rem 0; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 8px; font-size: 0.8rem;">
-                    <strong>Archivos modificados:</strong>
-                    <ul style="margin: 0.5rem 0; padding-left: 1.2rem;">
-                        <li>app.js</li>
-                        <li>index.html</li>
-                    </ul>
-                    <strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}
-                </div>
-                <div class="commit-history-section" style="max-height: 200px; overflow-y: auto;">
-                    <label style="font-size: 0.8rem; color: var(--text-muted);">Historial de commits (${AppState.commitHistory.length})</label>
-                    <div id="commit-history-list" style="margin-top: 0.5rem;">
-                        ${renderCommitHistory()}
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="display: flex; gap: 0.5rem; justify-content: flex-end; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                <button class="btn-secondary" onclick="closeCommitModal()">Cancelar</button>
-                <button class="btn-primary" onclick="saveCommit()">💾 Guardar Commit</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(commitModal);
-
-    // Agregar estilos CSS para el botón flotante
-    const styles = document.createElement('style');
-    styles.textContent = `
-        .btn-commit-floating {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #ff0050, #ff6b00);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4);
-            transition: all 0.3s ease;
-            z-index: 9999;
-            animation: pulse-commit 2s infinite;
-        }
-        .btn-commit-floating:hover {
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 0, 80, 0.6);
-        }
-        .btn-commit-floating.hidden {
-            display: none;
-        }
-        @keyframes pulse-commit {
-            0%, 100% { box-shadow: 0 4px 15px rgba(255, 0, 80, 0.4); }
-            50% { box-shadow: 0 4px 25px rgba(255, 0, 80, 0.7); }
-        }
-        .commit-item {
-            padding: 0.5rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-            margin-bottom: 0.5rem;
-            font-size: 0.75rem;
-            border-left: 3px solid #ff0050;
-        }
-        .commit-item .commit-msg {
-            font-weight: 600;
-            color: #fff;
-        }
-        .commit-item .commit-meta {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            margin-top: 0.2rem;
-        }
-        .commit-item .commit-actions {
-            margin-top: 0.3rem;
-            display: flex;
-            gap: 0.3rem;
-        }
-        .btn-commit-small {
-            padding: 2px 8px;
-            font-size: 0.7rem;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: transparent;
-            color: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-commit-small:hover {
-            background: rgba(255,255,255,0.1);
-        }
-    `;
-    document.head.appendChild(styles);
-
-    // Detectar cambios en localStorage (simula cambios en código)
-    window.addEventListener('storage', (e) => {
-        if (e.key && e.key.startsWith('shortsgen_')) {
-            showCommitButton();
-        }
-    });
-
-    // También detectar cuando el usuario modifica settings
-    const originalSaveSettings = saveSettings;
-    saveSettings = function() {
-        originalSaveSettings();
-        showCommitButton();
-    };
-
-    console.log('✅ Sistema de Commit Changes inicializado');
-}
-
-function showCommitButton() {
-    const btn = document.getElementById('btn-commit-changes');
-    if (btn) {
-        btn.classList.remove('hidden');
-        AppState.hasUnsavedChanges = true;
+        navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 }
-
-function hideCommitButton() {
-    const btn = document.getElementById('btn-commit-changes');
-    if (btn) {
-        btn.classList.add('hidden');
-        AppState.hasUnsavedChanges = false;
-    }
-}
-
-function showCommitDialog() {
-    document.getElementById('modal-commit').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    document.getElementById('commit-history-list').innerHTML = renderCommitHistory();
-}
-
-function closeCommitModal() {
-    document.getElementById('modal-commit').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function saveCommit() {
-    const message = document.getElementById('commit-message').value.trim();
-    const author = document.getElementById('commit-author').value.trim() || 'Developer';
-
-    if (!message) {
-        showToast('⚠️ Escribe un mensaje para el commit', 'warning');
-        return;
-    }
-
-    localStorage.setItem('commit_author', author);
-
-    const commit = {
-        id: Date.now(),
-        message: message,
-        author: author,
-        date: new Date().toISOString(),
-        files: ['app.js', 'index.html'],
-        apiKey: AppState.apiKey ? AppState.apiKey.substring(0, 10) + '...' : 'none',
-        settings: { ...AppState.settings }
-    };
-
-    AppState.commitHistory.unshift(commit);
-    localStorage.setItem('shortsgen_commits', JSON.stringify(AppState.commitHistory));
-
-    hideCommitButton();
-    closeCommitModal();
-    showToast('✅ Commit guardado: ' + message, 'success');
-
-    console.log('💾 Commit guardado:', commit);
-}
-
-function renderCommitHistory() {
-    if (AppState.commitHistory.length === 0) {
-        return '<p style="color: var(--text-muted); font-size: 0.75rem;">No hay commits guardados aún.</p>';
-    }
-
-    return AppState.commitHistory.slice(0, 10).map(commit => {
-        const date = new Date(commit.date).toLocaleDateString('es-ES', { 
-            day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
-        });
-        return `
-            <div class="commit-item">
-                <div class="commit-msg">${escapeHtml(commit.message)}</div>
-                <div class="commit-meta">${escapeHtml(commit.author)} · ${date}</div>
-                <div class="commit-actions">
-                    <button class="btn-commit-small" onclick="restoreCommit(${commit.id})">↩️ Restaurar</button>
-                    <button class="btn-commit-small" onclick="deleteCommit(${commit.id})">🗑️ Eliminar</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function restoreCommit(commitId) {
-    const commit = AppState.commitHistory.find(c => c.id === commitId);
-    if (!commit) return;
-
-    if (confirm(`¿Restaurar el commit "${commit.message}"?
-
-Esto sobrescribirá tu configuración actual.`)) {
-        if (commit.settings) {
-            AppState.settings = { ...AppState.settings, ...commit.settings };
-            saveSettings();
-        }
-        showToast('✅ Configuración restaurada del commit', 'success');
-    }
-}
-
-function deleteCommit(commitId) {
-    if (!confirm('¿Eliminar este commit del historial?')) return;
-    AppState.commitHistory = AppState.commitHistory.filter(c => c.id !== commitId);
-    localStorage.setItem('shortsgen_commits', JSON.stringify(AppState.commitHistory));
-    document.getElementById('commit-history-list').innerHTML = renderCommitHistory();
-    showToast('🗑️ Commit eliminado', 'info');
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Exponer funciones globales
-window.showCommitDialog = showCommitDialog;
-window.closeCommitModal = closeCommitModal;
-window.saveCommit = saveCommit;
-window.restoreCommit = restoreCommit;
-window.deleteCommit = deleteCommit;
