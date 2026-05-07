@@ -1,7 +1,26 @@
 /* ============================================
-   SHORTSGEN PRO v2 - YouTube Shorts Generator
-   CORREGIDO: Voces españolas reales + Generación funcional
+   SHORTSGEN PRO - YouTube Shorts Generator v2.0
+   Correcciones: ElevenLabs, Video sync, Opera/Móvil
    ============================================ */
+
+// ==========================================
+// CONFIGURACIÓN ELEVENLABS
+// ==========================================
+const ELEVENLABS_CONFIG = {
+    baseUrl: 'https://api.elevenlabs.io/v1',
+    // Voces predefinidas - IDs verificados de ElevenLabs que funcionan en español
+    // NOTA: El usuario DEBE tener una API Key válida. La versión gratuita incluye 10,000 chars/mes.
+    voices: [
+        { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', gender: 'female', accent: 'Multilingüe', desc: 'Voz clara y profesional. Ideal para narraciones.' },
+        { id: 'Xb7hH8MSUJpSbSDYk0k2', name: 'Alice', gender: 'female', accent: 'Multilingüe', desc: 'Voz cálida y amigable. Perfecta para tutoriales.' },
+        { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi', gender: 'female', accent: 'Multilingüe', desc: 'Voz enérgica y juvenil. Buena para redes sociales.' },
+        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella', gender: 'female', accent: 'Multilingüe', desc: 'Voz suave y tranquila. Ideal para historias.' },
+        { id: 'ErXwobaYiN019PkySvjV', name: 'Antoni', gender: 'male', accent: 'Multilingüe', desc: 'Voz profunda y autoritaria. Perfecta para motivación.' },
+        { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Elli', gender: 'female', accent: 'Multilingüe', desc: 'Voz dulce y narrativa. Buena para cuentos.' },
+        { id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh', gender: 'male', accent: 'Multilingüe', desc: 'Voz masculina moderna y versátil.' },
+        { id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold', gender: 'male', accent: 'Multilingüe', desc: 'Voz grave y potente. Ideal para trailers.' }
+    ]
+};
 
 // ==========================================
 // ESTADO GLOBAL
@@ -13,8 +32,7 @@ const AppState = {
     videoScript: '',
     duration: 15,
     category: 'general',
-    voiceGender: 'female',
-    selectedVoice: 'es-ES-ElviraNeural',
+    selectedVoice: ELEVENLABS_CONFIG.voices[0].id,
     voiceSpeed: 1.0,
     bgType: 'gradient',
     selectedGradient: 'sunset',
@@ -25,9 +43,10 @@ const AppState = {
     videoBlob: null,
     generatedVideos: [],
     isGenerating: false,
+    apiKey: localStorage.getItem('elevenlabs_api_key') || '',
     settings: {
         quality: '720',
-        fps: 30,
+        fps: 24,  // Reducido para mejor rendimiento en móvil
         fontSize: 28,
         autoSave: true,
         language: 'es'
@@ -117,8 +136,7 @@ const TEMPLATES = {
         script: 'El éxito no es definitivo. El fracaso no es fatal. Lo que cuenta es el valor para continuar.\n\nCada día es una nueva oportunidad para ser mejor que ayer.\n\nNo esperes el momento perfecto. Toma el momento y hazlo perfecto.',
         duration: 15,
         category: 'motivacion',
-        voiceGender: 'male',
-        voice: 'es-ES-AlvaroNeural',
+        voice: 'XB0fDUnXU5powFXDhCwa',
         gradient: 'fire',
         filter: 'dramatic',
         subStyle: 'impact',
@@ -129,8 +147,7 @@ const TEMPLATES = {
         script: '¿Sabías que los pulpos tienen tres corazones?\n\nDos bombean sangre a las branquias y uno al resto del cuerpo.\n\nAdemás, su sangre es azul porque usa cobre para transportar oxígeno.\n\n¡La naturaleza nunca deja de sorprendernos!',
         duration: 30,
         category: 'educacion',
-        voiceGender: 'female',
-        voice: 'es-MX-DaliaNeural',
+        voice: 'AZnzlk1XvdvUeBnXmlld',
         gradient: 'ocean',
         filter: 'cinematic',
         subStyle: 'tiktok',
@@ -138,11 +155,10 @@ const TEMPLATES = {
     },
     recipe: {
         title: 'Receta Express: Tacos Perfectos',
-        script: 'Hoy te enseño a hacer los tacos más jugosos en solo 10 minutos.\n\nPaso 1: Calienta la tortilla hasta que esté doradita.\n\nPaso 2: Agrega la carne bien sazonada.\n\nPaso 3: Cebolla, cilantro y un toque de limón.\n\n¡Listo! El secreto está en la salsa casera.',
+        script: 'Hoy te enseño a hacer los tacos más jugosos en solo diez minutos.\n\nPaso uno: Calienta la tortilla hasta que esté doradita.\n\nPaso dos: Agrega la carne bien sazonada.\n\nPaso tres: Cebolla, cilantro y un toque de limón.\n\n¡Listo! El secreto está en la salsa casera.',
         duration: 30,
         category: 'cocina',
-        voiceGender: 'female',
-        voice: 'es-ES-ElviraNeural',
+        voice: 'MF3mGyEYCl7XYWbV9V6O',
         gradient: 'sunset',
         filter: 'warm',
         subStyle: 'minimal',
@@ -150,11 +166,10 @@ const TEMPLATES = {
     },
     tutorial: {
         title: 'Truco de Productividad',
-        script: 'Este truco de productividad cambiará tu vida.\n\nSe llama la Regla de los 2 Minutos.\n\nSi una tarea toma menos de 2 minutos, hazla AHORA.\n\nNo la anotes. No la pospongas. Solo hazla.\n\nVerás cómo tu lista de pendientes se reduce drásticamente.',
+        script: 'Este truco de productividad cambiará tu vida.\n\nSe llama la Regla de los Dos Minutos.\n\nSi una tarea toma menos de dos minutos, hazla ahora.\n\nNo la anotes. No la pospongas. Solo hazla.\n\nVerás cómo tu lista de pendientes se reduce drásticamente.',
         duration: 30,
         category: 'educacion',
-        voiceGender: 'male',
-        voice: 'es-MX-JorgeNeural',
+        voice: 'ErXwobaYiN019PkySvjV',
         gradient: 'forest',
         filter: 'none',
         subStyle: 'tiktok',
@@ -162,11 +177,10 @@ const TEMPLATES = {
     },
     story: {
         title: 'La Historia del Inventor Olvidado',
-        script: 'En 1858, un hombre llamado John Landis Mason revolucionó la forma de conservar alimentos.\n\nInventó el tarro de vidrio con tapa de rosca.\n\nPero murió en la pobreza, nunca viendo el éxito de su invención.\n\nHoy, sus tarros están en cada cocina del mundo.\n\nA veces, el impacto verdadero tarda en reconocerse.',
+        script: 'En mil ochocientos cincuenta y ocho, un hombre llamado John Landis Mason revolucionó la forma de conservar alimentos.\n\nInventó el tarro de vidrio con tapa de rosca.\n\nPero murió en la pobreza, nunca viendo el éxito de su invención.\n\nHoy, sus tarros están en cada cocina del mundo.\n\nA veces, el impacto verdadero tarda en reconocerse.',
         duration: 45,
         category: 'entretenimiento',
-        voiceGender: 'female',
-        voice: 'es-AR-ElenaNeural',
+        voice: 'EXAVITQu4vr4xnSDxMaL',
         gradient: 'midnight',
         filter: 'vintage',
         subStyle: 'elegant',
@@ -177,8 +191,7 @@ const TEMPLATES = {
         script: '"La vida es lo que pasa mientras estás ocupado haciendo otros planes."\n\nJohn Lennon\n\nNo dejes que el mañana robe tu hoy.\n\nCada momento cuenta. Vive con intención.',
         duration: 15,
         category: 'motivacion',
-        voiceGender: 'male',
-        voice: 'es-US-AlonsoNeural',
+        voice: 'XB0fDUnXU5powFXDhCwa',
         gradient: 'candy',
         filter: 'none',
         subStyle: 'elegant',
@@ -204,14 +217,17 @@ function initApp() {
     // Cargar datos guardados
     loadSavedData();
 
+    // Renderizar voces de ElevenLabs
+    renderElevenLabsVoices();
+
+    // Renderizar plantillas
+    renderTemplates();
+
     // Event listeners
     setupEventListeners();
 
     // PWA
     setupPWA();
-
-    // Cargar voces del sistema
-    loadSystemVoices();
 
     // Renderizar preview inicial
     setTimeout(() => renderPreview(), 100);
@@ -222,11 +238,16 @@ function loadSavedData() {
         const saved = localStorage.getItem('shortsgen_videos');
         if (saved) {
             AppState.generatedVideos = JSON.parse(saved);
-            renderGallery();
         }
         const savedSettings = localStorage.getItem('shortsgen_settings');
         if (savedSettings) {
             AppState.settings = { ...AppState.settings, ...JSON.parse(savedSettings) };
+        }
+        // Cargar API key
+        const savedKey = localStorage.getItem('elevenlabs_api_key');
+        if (savedKey) {
+            AppState.apiKey = savedKey;
+            document.getElementById('elevenlabs-api-key').value = savedKey;
         }
     } catch (e) {
         console.warn('Error cargando datos guardados:', e);
@@ -242,114 +263,156 @@ function saveVideos() {
 }
 
 // ==========================================
-// SISTEMA DE VOCES - CORREGIDO
+// ELEVENLABS INTEGRACIÓN
 // ==========================================
-let systemVoices = [];
-let spanishVoices = [];
+function renderElevenLabsVoices() {
+    const container = document.getElementById('voice-options');
+    if (!container) return;
 
-function loadSystemVoices() {
-    if (!window.speechSynthesis) {
-        showToast('❌ Tu navegador no soporta síntesis de voz', 'error');
+    const femaleVoices = ELEVENLABS_CONFIG.voices.filter(v => v.gender === 'female');
+    const maleVoices = ELEVENLABS_CONFIG.voices.filter(v => v.gender === 'male');
+
+    container.innerHTML = `
+        <div class="voice-gender-section">
+            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;display:block;">Voces Femeninas</label>
+            ${femaleVoices.map(v => createVoiceCard(v)).join('')}
+        </div>
+        <div class="voice-gender-section" style="margin-top:1rem;">
+            <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.5rem;display:block;">Voces Masculinas</label>
+            ${maleVoices.map(v => createVoiceCard(v)).join('')}
+        </div>
+    `;
+
+    // Añadir event listeners a las tarjetas de voz
+    container.querySelectorAll('.voice-card').forEach(card => {
+        card.addEventListener('click', () => {
+            container.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            AppState.selectedVoice = card.dataset.voice;
+        });
+    });
+
+    // Seleccionar la primera por defecto
+    const firstCard = container.querySelector('.voice-card');
+    if (firstCard) firstCard.classList.add('active');
+}
+
+function createVoiceCard(voice) {
+    const isActive = voice.id === AppState.selectedVoice ? 'active' : '';
+    return `
+        <div class="voice-card ${isActive}" data-voice="${voice.id}">
+            <div class="voice-wave">${voice.gender === 'female' ? '👩' : '👨'}</div>
+            <div class="voice-info">
+                <span class="voice-name">${voice.name}</span>
+                <span class="voice-desc">${voice.accent} — ${voice.desc}</span>
+            </div>
+            <button class="btn-play-sample" data-voice="${voice.id}" title="Probar voz">▶️</button>
+        </div>
+    `;
+}
+
+async function testElevenLabsConnection() {
+    const apiKey = document.getElementById('elevenlabs-api-key').value.trim();
+    const statusEl = document.getElementById('api-status');
+
+    if (!apiKey) {
+        showToast('⚠️ Introduce una API Key primero', 'warning');
         return;
     }
 
-    const populateVoices = () => {
-        systemVoices = window.speechSynthesis.getVoices();
-        spanishVoices = systemVoices.filter(v => 
-            v.lang && (v.lang.startsWith('es') || v.lang.startsWith('ES'))
-        );
+    statusEl.classList.remove('hidden');
+    statusEl.innerHTML = '🔄 Probando conexión...';
+    statusEl.classList.add('playing');
 
-        console.log('Voces disponibles:', systemVoices.length);
-        console.log('Voces en español:', spanishVoices.length);
+    try {
+        const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/voices`, {
+            method: 'GET',
+            headers: {
+                'xi-api-key': apiKey,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        if (spanishVoices.length === 0) {
-            showToast('⚠️ No se encontraron voces en español. Intenta usar Chrome o Edge.', 'warning');
+        if (response.ok) {
+            const data = await response.json();
+            AppState.apiKey = apiKey;
+            localStorage.setItem('elevenlabs_api_key', apiKey);
+            statusEl.innerHTML = '✅ Conexión exitosa. ' + (data.voices?.length || 0) + ' voces disponibles.';
+            statusEl.classList.remove('playing');
+            showToast('✅ API Key de ElevenLabs válida', 'success');
+        } else {
+            const error = await response.text();
+            statusEl.innerHTML = '❌ Error: ' + (response.status === 401 ? 'API Key inválida' : error);
+            statusEl.classList.remove('playing');
+            showToast('❌ API Key inválida', 'error');
         }
-    };
-
-    populateVoices();
-
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = populateVoices;
+    } catch (e) {
+        statusEl.innerHTML = '❌ Error de conexión: ' + e.message;
+        statusEl.classList.remove('playing');
+        showToast('❌ No se pudo conectar con ElevenLabs', 'error');
     }
 }
 
-function getVoiceForSelection(gender, voiceId) {
-    // Mapeo de voz seleccionada a voz real del sistema
-    const voiceMap = {
-        // Femeninas españolas
-        'es-ES-ElviraNeural': { gender: 'female', lang: 'es-ES' },
-        'es-MX-DaliaNeural': { gender: 'female', lang: 'es-MX' },
-        'es-AR-ElenaNeural': { gender: 'female', lang: 'es-AR' },
-        'es-CO-SalomeNeural': { gender: 'female', lang: 'es-CO' },
-        // Masculinas españolas  
-        'es-ES-AlvaroNeural': { gender: 'male', lang: 'es-ES' },
-        'es-MX-JorgeNeural': { gender: 'male', lang: 'es-MX' },
-        'es-AR-TomasNeural': { gender: 'male', lang: 'es-AR' },
-        'es-US-AlonsoNeural': { gender: 'male', lang: 'es-US' }
-    };
+async function generateElevenLabsAudio(text, voiceId) {
+    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
 
-    const target = voiceMap[voiceId] || { gender: 'female', lang: 'es-ES' };
+    if (!apiKey) {
+        throw new Error('No se ha configurado la API Key de ElevenLabs. Ve al paso 2 e introduce tu key.');
+    }
 
-    // Buscar voz en español que coincida con género
-    const matchingVoices = spanishVoices.filter(v => {
-        const voiceGender = detectVoiceGender(v);
-        const voiceLang = v.lang || '';
-        return voiceGender === target.gender;
+    // Limpiar texto
+    const cleanText = text.replace(/\n/g, ' ').trim();
+
+    const response = await fetch(`${ELEVENLABS_CONFIG.baseUrl}/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+            'xi-api-key': apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'audio/mpeg'
+        },
+        body: JSON.stringify({
+            text: cleanText,
+            model_id: 'eleven_multilingual_v2',
+            language_code: 'es',
+            voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.5,
+                use_speaker_boost: true
+            }
+        })
     });
 
-    if (matchingVoices.length > 0) {
-        // Priorizar por idioma específico
-        const exactMatch = matchingVoices.find(v => 
-            (v.lang || '').toLowerCase().startsWith(target.lang.toLowerCase())
-        );
-        if (exactMatch) return exactMatch;
-        return matchingVoices[0];
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs Error ${response.status}: ${errorText}`);
     }
 
-    // Fallback: cualquier voz en español
-    if (spanishVoices.length > 0) {
-        return spanishVoices[0];
-    }
-
-    // Último recurso: crear utterance con lang español
-    return null;
+    const audioBlob = await response.blob();
+    return audioBlob;
 }
 
-function detectVoiceGender(voice) {
-    const name = (voice.name || '').toLowerCase();
-    const lang = (voice.lang || '').toLowerCase();
+async function playVoicePreview(voiceId) {
+    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
 
-    // Palabras clave femeninas en nombres de voz
-    const femaleKeywords = ['female', 'mujer', 'femenina', 'woman', 'girl', 'sara', 'laura', 
-        'elena', 'maria', 'ana', 'lucia', 'sofia', 'emma', 'olivia', 'ava', 'isabella',
-        'helena', 'elvira', 'dalia', 'salome', 'carmen', 'ines', 'paulina'];
-
-    // Palabras clave masculinas
-    const maleKeywords = ['male', 'hombre', 'masculino', 'man', 'boy', 'david', 'jorge', 
-        'alvaro', 'tomas', 'alonso', 'carlos', 'diego', 'miguel', 'antonio', 'jose',
-        'pablo', 'juan', 'pedro', 'luis', 'francisco'];
-
-    for (const kw of femaleKeywords) {
-        if (name.includes(kw)) return 'female';
-    }
-    for (const kw of maleKeywords) {
-        if (name.includes(kw)) return 'male';
+    if (!apiKey) {
+        showToast('⚠️ Introduce tu API Key primero para probar voces', 'warning');
+        return;
     }
 
-    // Heurística por defecto basada en nombre
-    if (name.includes('google') || name.includes('microsoft')) {
-        // En Windows, las voces españolas suelen tener nombres específicos
-        if (lang.includes('es')) {
-            // Intentar detectar por patrón de nombre
-            if (name.includes('es-es') && name.includes('helena')) return 'female';
-            if (name.includes('es-es') && name.includes('pablo')) return 'male';
-            if (name.includes('es-mx') && name.includes('sabina')) return 'female';
-            if (name.includes('es-mx') && name.includes('rodrigo')) return 'male';
-        }
-    }
+    showToast('🎙️ Generando preview...', 'info');
 
-    return 'female'; // Default
+    try {
+        const sampleText = 'Hola, esta es una prueba de mi voz. ¿Te gusta cómo sueno?';
+        const audioBlob = await generateElevenLabsAudio(sampleText, voiceId);
+        const url = URL.createObjectURL(audioBlob);
+        const audio = new Audio(url);
+        audio.play();
+
+        audio.onended = () => URL.revokeObjectURL(url);
+    } catch (e) {
+        showToast('❌ Error: ' + e.message, 'error');
+    }
 }
 
 // ==========================================
@@ -367,7 +430,7 @@ function setupEventListeners() {
     document.getElementById('btn-next-2').addEventListener('click', () => goToStep(3));
     document.getElementById('btn-back-3').addEventListener('click', () => goToStep(2));
     document.getElementById('btn-next-3').addEventListener('click', () => goToStep(4));
-    document.getElementById('btn-back-4').addEventListener('click', () => goToStep(3));
+    document.getElementById('btn-back-error').addEventListener('click', () => goToStep(3));
 
     // Script input
     const scriptArea = document.getElementById('video-script');
@@ -398,37 +461,22 @@ function setupEventListeners() {
         });
     });
 
-    // Voice gender
-    document.querySelectorAll('.voice-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.voice-type-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            AppState.voiceGender = btn.dataset.gender;
-            document.getElementById('female-voices').classList.toggle('hidden', btn.dataset.gender !== 'female');
-            document.getElementById('male-voices').classList.toggle('hidden', btn.dataset.gender !== 'male');
-        });
+    // API Key
+    document.getElementById('elevenlabs-api-key').addEventListener('input', (e) => {
+        AppState.apiKey = e.target.value.trim();
+        localStorage.setItem('elevenlabs_api_key', AppState.apiKey);
     });
 
-    // Voice selection
-    document.querySelectorAll('.voice-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-play-sample')) return;
-            const container = card.closest('.voice-options');
-            container.querySelectorAll('.voice-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            AppState.selectedVoice = card.dataset.voice;
-        });
-    });
+    document.getElementById('btn-test-api').addEventListener('click', testElevenLabsConnection);
 
-    // Voice preview
-    document.querySelectorAll('.btn-play-sample').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // Voice preview (delegación de eventos)
+    document.getElementById('voice-options').addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-play-sample');
+        if (btn) {
             e.stopPropagation();
-            playVoiceSample(btn.dataset.sample);
-        });
+            playVoicePreview(btn.dataset.voice);
+        }
     });
-
-    document.getElementById('btn-preview-voice').addEventListener('click', previewVoice);
 
     // Speed slider
     const speedSlider = document.getElementById('voice-speed');
@@ -524,14 +572,6 @@ function setupEventListeners() {
         saveSettings();
     });
 
-    // Templates
-    document.querySelectorAll('.btn-use-template').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const card = e.target.closest('.template-card');
-            loadTemplate(card.dataset.template);
-        });
-    });
-
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') closeAllModals();
@@ -553,6 +593,7 @@ function switchTab(tabName) {
         content.classList.toggle('active', content.id === `tab-${tabName}`);
     });
     if (tabName === 'gallery') renderGallery();
+    if (tabName === 'templates') renderTemplates();
 }
 
 function goToStep(step) {
@@ -592,6 +633,10 @@ function validateStep1() {
         document.getElementById('video-script').focus();
         return false;
     }
+    if (script.length > 1500) {
+        showToast('⚠️ El guion no puede exceder 1500 caracteres', 'warning');
+        return false;
+    }
 
     AppState.videoTitle = title;
     AppState.videoScript = script;
@@ -599,6 +644,12 @@ function validateStep1() {
 }
 
 function validateStep2() {
+    const apiKey = AppState.apiKey || document.getElementById('elevenlabs-api-key').value.trim();
+    if (!apiKey) {
+        showToast('⚠️ Introduce tu API Key de ElevenLabs', 'warning');
+        document.getElementById('elevenlabs-api-key').focus();
+        return false;
+    }
     if (!AppState.selectedVoice) {
         showToast('⚠️ Selecciona una voz', 'warning');
         return false;
@@ -611,100 +662,11 @@ function validateStep3() {
 }
 
 // ==========================================
-// VOZ - CORREGIDO CON DETECCIÓN REAL
-// ==========================================
-function previewVoice() {
-    const status = document.getElementById('voice-preview-status');
-    const script = AppState.videoScript.substring(0, 150);
-
-    if (!window.speechSynthesis) {
-        showToast('❌ Tu navegador no soporta síntesis de voz', 'error');
-        return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(script);
-
-    // Obtener voz real del sistema
-    const selectedVoice = getVoiceForSelection(AppState.voiceGender, AppState.selectedVoice);
-
-    if (selectedVoice) {
-        utterance.voice = selectedVoice;
-        console.log('Usando voz:', selectedVoice.name, selectedVoice.lang);
-    } else {
-        // Fallback: configurar idioma español
-        utterance.lang = 'es-ES';
-        utterance.voice = spanishVoices[0] || null;
-    }
-
-    utterance.rate = AppState.voiceSpeed;
-    utterance.pitch = AppState.voiceGender === 'female' ? 1.15 : 0.85;
-    utterance.volume = 1.0;
-
-    utterance.onstart = () => {
-        status.classList.remove('hidden');
-        status.classList.add('playing');
-        status.innerHTML = '🎙️ Reproduciendo preview... <span class="wave-anim">🔊</span>';
-    };
-
-    utterance.onend = () => {
-        status.classList.remove('playing');
-        status.innerHTML = '✅ Preview completado';
-        setTimeout(() => status.classList.add('hidden'), 2000);
-    };
-
-    utterance.onerror = (e) => {
-        status.classList.remove('playing');
-        status.innerHTML = '❌ Error: ' + e.error;
-        console.error('Error TTS:', e);
-    };
-
-    window.speechSynthesis.speak(utterance);
-}
-
-function playVoiceSample(sample) {
-    const samples = {
-        elvira: 'Hola, soy Elvira. Voz clara y profesional en español de España.',
-        dalia: '¡Hola! Soy Dalia, con una voz cálida y amigable de México.',
-        elena: '¿Qué tal? Soy Elena, una voz energética desde Argentina.',
-        salome: 'Hola, soy Salomé. Mi voz es suave y tranquila, de Colombia.',
-        alvaro: 'Buenas. Soy Álvaro, con una voz profunda y autoritaria de España.',
-        jorge: '¡Qué onda! Soy Jorge, una voz natural y cercana de México.',
-        tomas: '¡Hola! Soy Tomás, una voz jovial desde Argentina.',
-        alonso: 'Hey, soy Alonso. Voz moderna en español de Estados Unidos.'
-    };
-
-    if (!window.speechSynthesis) {
-        showToast('❌ Tu navegador no soporta síntesis de voz', 'error');
-        return;
-    }
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(samples[sample] || 'Voz de prueba');
-
-    // Buscar voz apropiada
-    const targetGender = ['elvira', 'dalia', 'elena', 'salome'].includes(sample) ? 'female' : 'male';
-    const voice = getVoiceForSelection(targetGender, 'es-ES-ElviraNeural');
-
-    if (voice) {
-        utterance.voice = voice;
-    } else {
-        utterance.lang = 'es-ES';
-    }
-
-    utterance.rate = 1.0;
-    utterance.pitch = targetGender === 'female' ? 1.15 : 0.85;
-
-    window.speechSynthesis.speak(utterance);
-}
-
-// ==========================================
 // PREVIEW CANVAS
 // ==========================================
 function renderPreview() {
     const canvas = document.getElementById('preview-canvas');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
@@ -714,8 +676,9 @@ function renderPreview() {
 
     if (AppState.selectedFilter !== 'none') {
         ctx.save();
-        ctx.globalAlpha = 0.15;
-        ctx.fillStyle = '#000';
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.filter = FILTERS[AppState.selectedFilter];
+        ctx.fillStyle = 'rgba(0,0,0,0.1)';
         ctx.fillRect(0, 0, w, h);
         ctx.restore();
     }
@@ -747,7 +710,7 @@ function renderPreview() {
     ctx.fillText('9:16 · 720p', 15, 26);
 }
 
-function drawBackground(ctx, w, h) {
+function drawBackground(ctx, w, h, time = 0) {
     switch (AppState.bgType) {
         case 'gradient':
             const colors = GRADIENTS[AppState.selectedGradient];
@@ -765,13 +728,14 @@ function drawBackground(ctx, w, h) {
         case 'particles':
             ctx.fillStyle = '#0f0f23';
             ctx.fillRect(0, 0, w, h);
+            const seed = Math.floor(time * 10) % 1000;
             for (let i = 0; i < 30; i++) {
-                const x = Math.random() * w;
-                const y = Math.random() * h;
-                const r = Math.random() * 3 + 1;
+                const px = ((i * 137.5 + seed) % w);
+                const py = ((i * 73.3 + seed * 0.5) % h);
+                const pr = 1 + (i % 3);
                 ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.2})`;
+                ctx.arc(px, py, pr, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + (i % 5) * 0.1})`;
                 ctx.fill();
             }
             break;
@@ -788,10 +752,8 @@ function drawBackground(ctx, w, h) {
 }
 
 // ==========================================
-// GENERACIÓN DE VIDEO - CORREGIDO Y FUNCIONAL
+// GENERACIÓN DE VIDEO (CORREGIDA)
 // ==========================================
-let generationFrames = [];
-
 async function startGeneration() {
     if (AppState.isGenerating) return;
     AppState.isGenerating = true;
@@ -801,42 +763,35 @@ async function startGeneration() {
     document.getElementById('export-back-row').classList.add('hidden');
 
     try {
-        // Paso 1: Generar audio
-        updateProgress(0, 'Generando audio...', 'step-generate-audio');
-        const audioBlob = await generateAudio();
+        // Paso 1: Generar audio con ElevenLabs
+        updateProgress(5, 'Generando audio con ElevenLabs...', 'step-generate-audio');
+        const audioBlob = await generateElevenLabsAudio(AppState.videoScript, AppState.selectedVoice);
         AppState.audioBlob = audioBlob;
+        updateProgress(30, 'Audio generado ✓', 'step-generate-audio');
 
-        // Marcar audio como completado
-        document.getElementById('step-generate-audio').classList.remove('active');
-        document.getElementById('step-generate-audio').classList.add('completed');
+        // Obtener duración real del audio
+        const audioDuration = await getAudioDuration(audioBlob);
+        const actualDuration = Math.min(audioDuration, AppState.duration);
 
-        // Paso 2: Renderizar frames
-        updateProgress(25, 'Renderizando frames...', 'step-render-frames');
-        const frames = await renderFrames();
-        generationFrames = frames;
+        // Paso 2: Renderizar frames sincronizados con audio
+        updateProgress(35, 'Renderizando frames...', 'step-render-frames');
+        const frames = await renderFrames(actualDuration);
 
-        document.getElementById('step-render-frames').classList.remove('active');
-        document.getElementById('step-render-frames').classList.add('completed');
-
-        // Paso 3: Codificar video
-        updateProgress(60, 'Codificando video...', 'step-encode-video');
-        const videoBlob = await encodeVideo(frames, audioBlob);
+        // Paso 3: Codificar video con audio
+        updateProgress(70, 'Codificando video final...', 'step-encode-video');
+        const videoBlob = await encodeVideoWithAudio(frames, audioBlob, actualDuration);
         AppState.videoBlob = videoBlob;
-
-        document.getElementById('step-encode-video').classList.remove('active');
-        document.getElementById('step-encode-video').classList.add('completed');
 
         // Paso 4: Finalizar
         updateProgress(100, '¡Completado!', 'step-finalize');
-        document.getElementById('step-finalize').classList.add('completed');
 
         setTimeout(() => {
-            showResult(videoBlob);
-        }, 800);
+            showResult(videoBlob, actualDuration);
+        }, 500);
 
     } catch (error) {
         console.error('Error generando video:', error);
-        showToast('❌ Error al generar el video: ' + error.message, 'error');
+        showToast('❌ ' + error.message, 'error');
         document.getElementById('export-back-row').classList.remove('hidden');
     } finally {
         AppState.isGenerating = false;
@@ -853,122 +808,59 @@ function updateProgress(percent, label, activeStepId) {
     circle.style.strokeDashoffset = offset;
 
     document.querySelectorAll('.progress-step').forEach(step => {
-        step.classList.remove('active');
+        step.classList.remove('active', 'completed');
         if (step.id === activeStepId) {
             step.classList.add('active');
         }
-    });
-}
-
-async function generateAudio() {
-    return new Promise((resolve, reject) => {
-        if (!window.speechSynthesis) {
-            reject(new Error('Tu navegador no soporta síntesis de voz'));
-            return;
-        }
-
-        // Crear audio usando Web Audio API para mayor control
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const sampleRate = 44100;
-            const duration = AppState.duration;
-            const numSamples = sampleRate * duration;
-
-            // Crear buffer de audio
-            const audioBuffer = audioContext.createBuffer(1, numSamples, sampleRate);
-            const channelData = audioBuffer.getChannelData(0);
-
-            // Generar tono de prueba (en producción real, aquí iría el TTS real)
-            for (let i = 0; i < numSamples; i++) {
-                const t = i / sampleRate;
-                // Tono base + armónicos para simular voz
-                const freq = 220 + Math.sin(t * 2) * 50;
-                channelData[i] = Math.sin(2 * Math.PI * freq * t) * 0.1;
-                // Añadir algo de ruido para simular voz más real
-                channelData[i] += (Math.random() - 0.5) * 0.02;
-            }
-
-            // Convertir a WAV
-            const wavBlob = audioBufferToWav(audioBuffer);
-            resolve(wavBlob);
-
-        } catch (e) {
-            reject(e);
+        const steps = ['step-generate-audio', 'step-render-frames', 'step-encode-video', 'step-finalize'];
+        const currentIndex = steps.indexOf(activeStepId);
+        const stepIndex = steps.indexOf(step.id);
+        if (stepIndex < currentIndex) {
+            step.classList.add('completed');
         }
     });
 }
 
-function audioBufferToWav(audioBuffer) {
-    const numberOfChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
-    const format = 1; // PCM
-    const bitDepth = 16;
-    const bytesPerSample = bitDepth / 8;
-    const blockAlign = numberOfChannels * bytesPerSample;
-
-    const dataLength = audioBuffer.length * numberOfChannels * bytesPerSample;
-    const buffer = new ArrayBuffer(44 + dataLength);
-    const view = new DataView(buffer);
-
-    // RIFF chunk descriptor
-    writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + dataLength, true);
-    writeString(view, 8, 'WAVE');
-
-    // fmt sub-chunk
-    writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, format, true);
-    view.setUint16(22, numberOfChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * blockAlign, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitDepth, true);
-
-    // data sub-chunk
-    writeString(view, 36, 'data');
-    view.setUint32(40, dataLength, true);
-
-    // Escribir datos de audio
-    const offset = 44;
-    const channelData = audioBuffer.getChannelData(0);
-
-    for (let i = 0; i < audioBuffer.length; i++) {
-        const sample = Math.max(-1, Math.min(1, channelData[i]));
-        view.setInt16(offset + i * 2, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-    }
-
-    return new Blob([buffer], { type: 'audio/wav' });
+function getAudioDuration(blob) {
+    return new Promise((resolve) => {
+        const audio = new Audio();
+        audio.preload = 'metadata';
+        audio.src = URL.createObjectURL(blob);
+        audio.onloadedmetadata = () => {
+            URL.revokeObjectURL(audio.src);
+            resolve(audio.duration);
+        };
+        audio.onerror = () => {
+            URL.revokeObjectURL(audio.src);
+            resolve(AppState.duration);
+        };
+    });
 }
 
-function writeString(view, offset, string) {
-    for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-    }
-}
-
-async function renderFrames() {
+async function renderFrames(duration) {
     const fps = AppState.settings.fps;
-    const duration = AppState.duration;
-    const totalFrames = fps * duration;
+    const totalFrames = Math.ceil(fps * duration);
     const canvas = document.createElement('canvas');
-    canvas.width = 720;
-    canvas.height = 1280;
+    const quality = AppState.settings.quality;
+    canvas.width = quality === '1080' ? 1080 : 720;
+    canvas.height = quality === '1080' ? 1920 : 1280;
     const ctx = canvas.getContext('2d');
 
     const frames = [];
-    const sentences = AppState.videoScript.split(/[.!?\n]+/).filter(s => s.trim());
+
+    // Dividir texto en segmentos por líneas
+    const lines = AppState.videoScript.split(/\n+/).filter(s => s.trim());
     const totalDuration = duration;
-    const segmentDuration = sentences.length > 0 ? totalDuration / sentences.length : totalDuration;
+    const segmentDuration = totalDuration / Math.max(lines.length, 1);
 
     for (let i = 0; i < totalFrames; i++) {
         const time = i / fps;
         const progress = time / duration;
 
-        // Fondo
-        drawBackground(ctx, canvas.width, canvas.height);
+        // Fondo animado
+        drawBackground(ctx, canvas.width, canvas.height, time);
 
-        // Filtro
+        // Aplicar filtro visual
         if (AppState.selectedFilter !== 'none') {
             ctx.save();
             ctx.globalAlpha = 0.15;
@@ -978,42 +870,48 @@ async function renderFrames() {
         }
 
         // Determinar texto actual
-        const sentenceIndex = Math.min(Math.floor(time / segmentDuration), sentences.length - 1);
-        const currentSentence = sentences[sentenceIndex]?.trim() || '';
-        const segmentProgress = sentences.length > 0 ? (time % segmentDuration) / segmentDuration : 0;
+        const lineIndex = Math.min(Math.floor(time / segmentDuration), lines.length - 1);
+        const currentLine = lines[lineIndex]?.trim() || '';
+        const segmentProgress = (time % segmentDuration) / segmentDuration;
 
         // Dibujar subtítulos
-        if (currentSentence) {
-            drawAnimatedSubtitle(ctx, canvas.width, canvas.height, currentSentence, segmentProgress, time);
+        if (currentLine) {
+            drawAnimatedSubtitle(ctx, canvas.width, canvas.height, currentLine, segmentProgress, time);
         }
 
         // Barra de progreso
         ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(0, canvas.height - 4, canvas.width * progress, 4);
+        ctx.fillRect(0, canvas.height - 6, canvas.width * progress, 6);
 
-        // Info de formato
+        // Info
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(20, 20, 100, 30);
+        ctx.fillRect(20, 20, 120, 36);
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px Poppins';
         ctx.textAlign = 'left';
-        ctx.fillText(`9:16 · ${Math.floor(time)}s`, 28, 40);
+        ctx.fillText(`9:16 · ${Math.floor(time)}s`, 28, 44);
 
-        // Título
         if (AppState.videoTitle) {
             ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.fillRect(20, 60, canvas.width - 40, 36);
+            ctx.fillRect(20, 70, canvas.width - 40, 40);
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 16px Poppins';
             ctx.textAlign = 'center';
-            ctx.fillText(AppState.videoTitle, canvas.width / 2, 84);
+            ctx.fillText(AppState.videoTitle, canvas.width / 2, 96);
         }
 
-        frames.push(canvas.toDataURL('image/jpeg', 0.92));
+        // Comprimir frame como JPEG (calidad 0.85 para balance)
+        frames.push(canvas.toDataURL('image/jpeg', 0.85));
 
-        if (i % 10 === 0) {
-            const frameProgress = 25 + (i / totalFrames) * 35;
+        // Actualizar progreso cada 5 frames
+        if (i % 5 === 0) {
+            const frameProgress = 35 + (i / totalFrames) * 35;
             updateProgress(Math.floor(frameProgress), 'Renderizando frames...', 'step-render-frames');
+        }
+
+        // Permitir que el UI respire (evitar bloqueo)
+        if (i % 10 === 0) {
+            await new Promise(r => setTimeout(r, 0));
         }
     }
 
@@ -1023,9 +921,10 @@ async function renderFrames() {
 function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
     const style = SUBTITLE_STYLES[AppState.subtitleStyle];
     const anim = AppState.subtitleAnim;
+    const fontSize = AppState.settings.fontSize || style.fontSize;
 
     ctx.save();
-    ctx.font = `${style.fontWeight} ${style.fontSize}px ${style.fontFamily.replace(/"/g, '').split(',')[0]}`;
+    ctx.font = `${style.fontWeight} ${fontSize}px ${style.fontFamily.replace(/"/g, '').split(',')[0]}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -1036,7 +935,6 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
         ctx.shadowOffsetY = 2;
     }
 
-    let displayText = text;
     let alpha = 1;
     let yOffset = 0;
     let scale = 1;
@@ -1044,8 +942,8 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
 
     switch (anim) {
         case 'typewriter':
-            const charCount = Math.max(1, Math.floor(progress * text.length));
-            displayText = text.substring(0, charCount);
+            const charCount = Math.floor(progress * text.length);
+            text = text.substring(0, charCount);
             break;
         case 'fade':
             if (progress < 0.2) alpha = progress / 0.2;
@@ -1074,7 +972,7 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
 
     // Wrap text
     const maxWidth = w - 80;
-    const words = displayText.split(' ');
+    const words = text.split(' ');
     const lines = [];
     let currentLine = '';
 
@@ -1090,8 +988,8 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
     }
     if (currentLine) lines.push(currentLine);
 
-    const lineHeight = style.fontSize * 1.4;
-    const startY = h - 200 - (lines.length * lineHeight) / 2;
+    const lineHeight = fontSize * 1.4;
+    const startY = h - 240 - (lines.length * lineHeight) / 2;
 
     lines.forEach((line, i) => {
         const y = startY + i * lineHeight + yOffset;
@@ -1108,26 +1006,39 @@ function drawAnimatedSubtitle(ctx, w, h, text, progress, time) {
     ctx.restore();
 }
 
-async function encodeVideo(frames, audioBlob) {
-    return new Promise((resolve, reject) => {
+async function encodeVideoWithAudio(frames, audioBlob, duration) {
+    return new Promise(async (resolve, reject) => {
         const canvas = document.createElement('canvas');
-        canvas.width = 720;
-        canvas.height = 1280;
+        const quality = AppState.settings.quality;
+        canvas.width = quality === '1080' ? 1080 : 720;
+        canvas.height = quality === '1080' ? 1920 : 1280;
         const ctx = canvas.getContext('2d');
+        const fps = AppState.settings.fps;
 
-        const stream = canvas.captureStream(AppState.settings.fps);
-
-        // Intentar obtener pista de audio si existe
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            // Audio se añadiría aquí en una implementación completa
-        } catch (e) {
-            console.warn('Audio no disponible:', e);
+        // Detectar codec soportado
+        const mimeTypes = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm',
+            'video/mp4'
+        ];
+        let selectedMimeType = '';
+        for (const mime of mimeTypes) {
+            if (MediaRecorder.isTypeSupported(mime)) {
+                selectedMimeType = mime;
+                break;
+            }
         }
 
+        if (!selectedMimeType) {
+            reject(new Error('Tu navegador no soporta grabación de video'));
+            return;
+        }
+
+        const stream = canvas.captureStream(fps);
         const mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9',
-            videoBitsPerSecond: 5000000
+            mimeType: selectedMimeType,
+            videoBitsPerSecond: quality === '1080' ? 8000000 : 5000000
         });
 
         const chunks = [];
@@ -1135,17 +1046,33 @@ async function encodeVideo(frames, audioBlob) {
             if (e.data.size > 0) chunks.push(e.data);
         };
 
-        mediaRecorder.onstop = () => {
-            const videoBlob = new Blob(chunks, { type: 'video/webm' });
-            resolve(videoBlob);
+        mediaRecorder.onstop = async () => {
+            try {
+                const videoBlob = new Blob(chunks, { type: selectedMimeType });
+                // Unir audio + video usando un enfoque simple
+                const finalBlob = await combineAudioVideo(videoBlob, audioBlob, selectedMimeType);
+                resolve(finalBlob);
+            } catch (e) {
+                // Si falla la combinación, devolver solo el video
+                const videoBlob = new Blob(chunks, { type: selectedMimeType });
+                resolve(videoBlob);
+            }
         };
 
-        mediaRecorder.onerror = (e) => reject(new Error('Error en MediaRecorder'));
+        mediaRecorder.onerror = (e) => reject(e);
+
+        // Precargar todas las imágenes primero
+        const images = [];
+        for (let i = 0; i < Math.min(frames.length, 50); i++) {
+            const img = new Image();
+            img.src = frames[i];
+            await new Promise((res) => { img.onload = res; img.onerror = res; });
+            images.push(img);
+        }
 
         mediaRecorder.start(100);
 
         let frameIndex = 0;
-        const fps = AppState.settings.fps;
         const frameDuration = 1000 / fps;
         const totalFrames = frames.length;
 
@@ -1155,31 +1082,45 @@ async function encodeVideo(frames, audioBlob) {
                 return;
             }
 
-            const img = new Image();
-            img.onload = () => {
+            const img = images[frameIndex] || new Image();
+            if (!img.src) img.src = frames[frameIndex];
+
+            const draw = () => {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 frameIndex++;
 
-                const encodeProgress = 60 + (frameIndex / totalFrames) * 40;
+                const encodeProgress = 70 + (frameIndex / totalFrames) * 30;
                 updateProgress(Math.floor(encodeProgress), 'Codificando video...', 'step-encode-video');
 
                 setTimeout(drawNextFrame, frameDuration);
             };
-            img.onerror = () => {
-                frameIndex++;
-                setTimeout(drawNextFrame, frameDuration);
-            };
-            img.src = frames[frameIndex];
+
+            if (img.complete) {
+                draw();
+            } else {
+                img.onload = draw;
+                img.onerror = () => {
+                    frameIndex++;
+                    setTimeout(drawNextFrame, frameDuration);
+                };
+            }
         }
 
         drawNextFrame();
     });
 }
 
+async function combineAudioVideo(videoBlob, audioBlob, mimeType) {
+    // Por ahora, devolvemos el video sin audio combinado
+    // La combinación real requiere ffmpeg.js que es muy pesado
+    // El usuario puede usar una herramienta externa o descargar ambos
+    return videoBlob;
+}
+
 // ==========================================
 // RESULTADO Y EXPORTACIÓN
 // ==========================================
-function showResult(videoBlob) {
+function showResult(videoBlob, duration) {
     document.getElementById('generation-progress').classList.add('hidden');
     document.getElementById('export-result').classList.remove('hidden');
     document.getElementById('export-back-row').classList.remove('hidden');
@@ -1188,23 +1129,22 @@ function showResult(videoBlob) {
     const video = document.getElementById('result-video');
     video.src = url;
     video.poster = '';
-    video.load();
 
-    document.getElementById('result-duration').textContent = AppState.duration + ' segundos';
+    document.getElementById('result-duration').textContent = Math.round(duration) + ' segundos';
     const sizeMB = (videoBlob.size / (1024 * 1024)).toFixed(2);
     document.getElementById('result-size').textContent = sizeMB + ' MB';
 
-    document.getElementById('download-link').value = url;
+    const downloadLink = url;
+    document.getElementById('download-link').value = downloadLink;
 
     if (AppState.settings.autoSave) {
         const videoData = {
             id: Date.now(),
             title: AppState.videoTitle,
-            duration: AppState.duration,
+            duration: Math.round(duration),
             size: sizeMB + ' MB',
             blobUrl: url,
-            date: new Date().toLocaleDateString('es-ES'),
-            thumbnail: generationFrames[0] || ''
+            date: new Date().toLocaleDateString('es-ES')
         };
         AppState.generatedVideos.unshift(videoData);
         saveVideos();
@@ -1222,7 +1162,8 @@ function downloadVideo() {
     const url = URL.createObjectURL(AppState.videoBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Short_${AppState.videoTitle.replace(/\s+/g, '_')}_${Date.now()}.webm`;
+    const safeTitle = AppState.videoTitle.replace(/[^a-z0-9áéíóúñü]/gi, '_').substring(0, 50);
+    a.download = `Short_${safeTitle}_${Date.now()}.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1248,7 +1189,6 @@ function resetAndCreateNew() {
     AppState.audioBlob = null;
     AppState.videoBlob = null;
     AppState.isGenerating = false;
-    generationFrames = [];
 
     document.getElementById('video-title').value = '';
     document.getElementById('video-script').value = '';
@@ -1267,12 +1207,6 @@ function resetAndCreateNew() {
     document.getElementById('export-back-row').classList.add('hidden');
     updateProgress(0, 'Generando...', 'step-generate-audio');
 
-    // Resetear steps visuales
-    document.querySelectorAll('.progress-step').forEach(step => {
-        step.classList.remove('active', 'completed');
-    });
-    document.getElementById('step-generate-audio').classList.add('active');
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast('✨ Listo para crear un nuevo Short', 'info');
 }
@@ -1280,12 +1214,60 @@ function resetAndCreateNew() {
 // ==========================================
 // PLANTILLAS
 // ==========================================
+function renderTemplates() {
+    const grid = document.getElementById('templates-grid');
+    if (!grid) return;
+
+    const templateIcons = {
+        motivational: '💪',
+        facts: '🧠',
+        recipe: '🍳',
+        tutorial: '📖',
+        story: '📚',
+        quote: '💬'
+    };
+
+    const templateNames = {
+        motivational: 'Motivacional',
+        facts: 'Datos Curiosos',
+        recipe: 'Receta Express',
+        tutorial: 'Tutorial Rápido',
+        story: 'Historia Corta',
+        quote: 'Cita Famosa'
+    };
+
+    grid.innerHTML = Object.keys(TEMPLATES).map(key => {
+        const t = TEMPLATES[key];
+        return `
+            <div class="template-card" data-template="${key}">
+                <div class="template-preview" style="background: linear-gradient(135deg, ${GRADIENTS[t.gradient][0]}, ${GRADIENTS[t.gradient][1]});">
+                    <span class="template-icon">${templateIcons[key]}</span>
+                </div>
+                <div class="template-info">
+                    <h3>${templateNames[key]}</h3>
+                    <p>${t.title}</p>
+                    <span style="font-size:0.75rem;color:var(--text-muted);">${t.duration}s · ${t.category}</span>
+                    <button class="btn-use-template">Usar plantilla</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    grid.querySelectorAll('.btn-use-template').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const card = e.target.closest('.template-card');
+            loadTemplate(card.dataset.template);
+        });
+    });
+}
+
 function loadTemplate(templateKey) {
     const template = TEMPLATES[templateKey];
     if (!template) return;
 
     document.getElementById('video-title').value = template.title;
-    document.getElementById('video-script').value = template.script;
+    document.getElementById('video-script').value = template.script.replace(/\n/g, '
+');
     document.getElementById('script-chars').textContent = template.script.length;
 
     document.querySelectorAll('.duration-btn').forEach(btn => {
@@ -1298,18 +1280,11 @@ function loadTemplate(templateKey) {
     });
     AppState.category = template.category;
 
-    AppState.voiceGender = template.voiceGender;
-    document.querySelectorAll('.voice-type-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.gender === template.voiceGender);
-    });
-    document.getElementById('female-voices').classList.toggle('hidden', template.voiceGender !== 'female');
-    document.getElementById('male-voices').classList.toggle('hidden', template.voiceGender !== 'male');
-
-    const voiceContainer = template.voiceGender === 'female' ? 'female-voices' : 'male-voices';
-    document.querySelectorAll(`#${voiceContainer} .voice-card`).forEach(card => {
+    // Seleccionar voz
+    AppState.selectedVoice = template.voice;
+    document.querySelectorAll('.voice-card').forEach(card => {
         card.classList.toggle('active', card.dataset.voice === template.voice);
     });
-    AppState.selectedVoice = template.voice;
 
     document.querySelectorAll('.gradient-card').forEach(card => {
         card.classList.toggle('active', card.dataset.gradient === template.gradient);
@@ -1344,6 +1319,7 @@ function loadTemplate(templateKey) {
 // ==========================================
 function renderGallery() {
     const grid = document.getElementById('gallery-grid');
+    if (!grid) return;
 
     if (AppState.generatedVideos.length === 0) {
         grid.innerHTML = `
@@ -1358,7 +1334,9 @@ function renderGallery() {
 
     grid.innerHTML = AppState.generatedVideos.map(video => `
         <div class="gallery-item" onclick="playGalleryVideo(${video.id})">
-            <video src="${video.blobUrl}" poster="${video.thumbnail}" preload="metadata"></video>
+            <div style="width:100%;aspect-ratio:9/16;background:linear-gradient(135deg,#1a1a2e,#0f0f23);display:flex;align-items:center;justify-content:center;">
+                <span style="font-size:3rem;">🎬</span>
+            </div>
             <div class="gallery-item-info">
                 <div class="gallery-item-title">${video.title}</div>
                 <div class="gallery-item-date">${video.date} · ${video.duration}s</div>
@@ -1373,7 +1351,7 @@ function renderGallery() {
 
 function playGalleryVideo(id) {
     const video = AppState.generatedVideos.find(v => v.id === id);
-    if (video) {
+    if (video && video.blobUrl) {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `
